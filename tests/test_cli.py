@@ -6,7 +6,16 @@ from pathlib import Path
 import pytest
 from conftest import DOC_SAMPLE, Writer, line_of
 from hypothesis import HealthCheck, given, settings
-from strategies import encode, encodings, render, xml_documents
+from strategies import (
+    JSON_FRAGMENTS,
+    XML_FRAGMENTS,
+    XML_PROLOGS,
+    encode,
+    encodings,
+    fuzzed,
+    render,
+    xml_documents,
+)
 
 from sigma_blindspot import cli, doctor
 from sigma_blindspot.doctor import Check, check_distribution
@@ -119,6 +128,17 @@ def test_inspect_output_is_printable_ascii(
     path = write("config.xml", encode(text, encoding))
     code, out, _ = run(capsys, "inspect", str(path))
     assert code == cli.EXIT_OK and printable(out)
+
+
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
+@given(config=fuzzed(XML_FRAGMENTS, XML_PROLOGS), events=fuzzed(JSON_FRAGMENTS))
+def test_check_event_never_crashes(
+    capsys: Capture, write: Writer, config: bytes, events: bytes
+) -> None:
+    arguments = str(write("config.xml", config)), str(write("events.jsonl", events))
+    code, out, err = run(capsys, "check-event", *arguments)
+    assert code in (cli.EXIT_OK, cli.EXIT_ERROR)
+    assert printable(out) and printable(err)
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Windows file names exclude control characters")

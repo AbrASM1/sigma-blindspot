@@ -4,7 +4,7 @@ import pytest
 from conftest import Writer
 from hypothesis import given
 from hypothesis import strategies as st
-from strategies import encode, encodings
+from strategies import JSON_FRAGMENTS, encode, encodings, fuzzed
 
 from sigma_blindspot.errors import EventError
 from sigma_blindspot.sysmon.events import EVENT_IDS
@@ -89,3 +89,11 @@ def test_rejects_undecodable_bytes_with_their_line() -> None:
     with pytest.raises(EventError) as caught:
         parse_events(b'{"EventID": 4}\n{"EventID": 1, "Image": "\xff"}\n', SOURCE)
     assert (caught.value.line, caught.value.message) == (2, "not valid utf-8: invalid start byte")
+
+
+@given(data=fuzzed(JSON_FRAGMENTS))
+def test_any_input_is_read_or_rejected_with_an_event_error(data: bytes) -> None:
+    try:
+        parse_events(data, SOURCE)
+    except EventError as error:
+        assert error.source == SOURCE and error.line is not None and error.line >= 1
