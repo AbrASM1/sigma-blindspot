@@ -15,6 +15,21 @@
 - Exit codes: `0` success, `1` a `doctor` check failed or the reader closed the output early,
   `2` invalid input.
 
+## HTML report
+
+`--html FILE` on `inspect` or `check-event` also writes a report: summary counts, one row per
+event with its verdict and links to the configuration lines responsible, the parsed
+configuration, the event types left to the assumed default, and the assumptions the results
+depend on.
+
+- One self-contained file: no JavaScript, no external resource, and a Content Security Policy
+  (`default-src 'none'`) that only allows the embedded stylesheet.
+- Every string from the inputs is escaped. Control, format and other invisible characters, such
+  as a right-to-left override in a file name, are shown as highlighted escapes (`\u202e`).
+- The same inputs give the same file byte for byte: no timestamp, and the SHA-256 of each input
+  file identifies what was analysed.
+- The report never overwrites an input file.
+
 ## Sysmon semantics implemented
 
 `documented` rows come from the

@@ -22,7 +22,8 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - `uv run mypy`: strict type check of `src` and `tests`, also run by CI
 - `HYPOTHESIS_PROFILE=intensive uv run pytest` (PowerShell: set `$env:HYPOTHESIS_PROFILE`):
   10,000 examples per property, for deep checks before a release
-- `uv run sigma-blindspot doctor | inspect CONFIG | check-event CONFIG EVENTS`
+- `uv run sigma-blindspot doctor | inspect CONFIG | check-event CONFIG EVENTS`, `--html FILE`
+  on the last two also writes a self-contained HTML report
 - After any dependency change: run `uv lock` and commit `uv.lock` (CI uses `uv sync --locked`)
 - The dev machine is Windows (PowerShell). Lab tests run on a separate Windows VM with Sysmon.
 
@@ -70,7 +71,9 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
   the config parser and the event reader; expat only ever sees decoded text.
 - `src/sigma_blindspot/cli.py`: argparse with `doctor` (checks in `doctor.py`), `inspect`,
   `check-event`. `errors.py`: `ConfigError` and `EventError`, both `(message, line, source)`.
-- `tests/`: unit, CLI, property-based and fuzz tests, 223 passing. CI runs on Windows and Linux.
+- `src/sigma_blindspot/report/html.py`: pure `render()` of the HTML report (stdlib only, no
+  JavaScript, CSP pinned to the embedded stylesheet hash, every input string escaped).
+- `tests/`: unit, CLI, property-based and fuzz tests, 233 passing. CI runs on Windows and Linux.
 
 ## Sysmon semantics
 

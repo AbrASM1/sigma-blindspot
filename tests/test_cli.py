@@ -1,3 +1,4 @@
+import hashlib
 import subprocess
 import sys
 from importlib import metadata
@@ -170,6 +171,50 @@ def test_check_event_prints_a_verdict_per_event(capsys: Capture, write: Writer) 
         f"{events}:5: EventID 1 LOGGED no filter for this event type, assumed default",
         "4 events: 2 logged, 2 dropped",
     ]
+
+
+def test_check_event_writes_the_same_html_report_on_every_run(
+    capsys: Capture, write: Writer, tmp_path: Path
+) -> None:
+    config, events = write("sysmon.xml", DOC_SAMPLE), write("events.jsonl", EVENTS)
+    report = tmp_path / "report.html"
+    plain = run(capsys, "check-event", str(config), str(events))
+    first = run(capsys, "check-event", str(config), str(events), "--html", str(report))
+    content = report.read_bytes()
+    second = run(capsys, "check-event", str(config), str(events), "--html", str(report))
+    assert plain == first == second and first[0] == cli.EXIT_OK
+    assert report.read_bytes() == content
+    for path in (config, events):
+        assert hashlib.sha256(path.read_bytes()).hexdigest().encode() in content
+
+
+def test_inspect_writes_a_configuration_report(
+    capsys: Capture, write: Writer, tmp_path: Path
+) -> None:
+    report = tmp_path / "report.html"
+    code, _, err = run(
+        capsys, "inspect", str(write("sysmon.xml", DOC_SAMPLE)), "--html", str(report)
+    )
+    content = report.read_text(encoding="utf-8")
+    assert (code, err) == (cli.EXIT_OK, "")
+    assert "<h2>Configuration</h2>" in content and "<h2>Events</h2>" not in content
+
+
+def test_html_report_never_overwrites_an_input(capsys: Capture, write: Writer) -> None:
+    config, events = write("sysmon.xml", DOC_SAMPLE), write("events.jsonl", EVENTS)
+    code, out, err = run(capsys, "check-event", str(config), str(events), "--html", str(events))
+    assert (code, out) == (cli.EXIT_ERROR, "")
+    assert err == f"error: {events}: refusing to overwrite an input file\n"
+    assert events.read_text() == EVENTS
+
+
+def test_html_report_into_a_directory_fails_without_output(
+    capsys: Capture, write: Writer, tmp_path: Path
+) -> None:
+    config = write("sysmon.xml", DOC_SAMPLE)
+    code, out, err = run(capsys, "inspect", str(config), "--html", str(tmp_path))
+    assert (code, out) == (cli.EXIT_ERROR, "")
+    assert err.startswith("error: [Errno ")
 
 
 def test_reports_config_errors_with_their_location(capsys: Capture, write: Writer) -> None:

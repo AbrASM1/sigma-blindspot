@@ -16,8 +16,8 @@ uv run sigma-blindspot doctor
 ## Usage
 
 ```console
-uv run sigma-blindspot inspect CONFIG
-uv run sigma-blindspot check-event CONFIG EVENTS
+uv run sigma-blindspot inspect CONFIG [--html FILE]
+uv run sigma-blindspot check-event CONFIG EVENTS [--html FILE]
 ```
 
 `sysmon.xml`:
