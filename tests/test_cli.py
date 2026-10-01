@@ -23,6 +23,10 @@ EVENTS = """\
 """
 
 
+def printable(output: str) -> bool:
+    return all(" " <= character <= "~" for line in output.splitlines() for character in line)
+
+
 def run(capsys: Capture, *arguments: str) -> tuple[int, str, str]:
     code = cli.main(arguments)
     captured = capsys.readouterr()
@@ -108,13 +112,25 @@ def test_inspect_shows_rules_and_group_relations(capsys: Capture, write: Writer)
 
 @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(filters=xml_documents, encoding=encodings)
-def test_inspect_output_is_ascii(
+def test_inspect_output_is_printable_ascii(
     capsys: Capture, write: Writer, filters: tuple[EventFilter, ...], encoding: str
 ) -> None:
     text, _ = render(filters, encoding)
     path = write("config.xml", encode(text, encoding))
     code, out, _ = run(capsys, "inspect", str(path))
-    assert code == cli.EXIT_OK and out.isascii()
+    assert code == cli.EXIT_OK and printable(out)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows file names exclude control characters")
+def test_control_characters_in_paths_cannot_reach_the_terminal(
+    capsys: Capture, write: Writer
+) -> None:
+    config = write("evil\x1b]0;title\x07\x1b[31m\n.xml", DOC_SAMPLE)
+    events = write("events\r.jsonl", '{"EventID": 6, "Signature": "Microsoft"}\n')
+    code, out, err = run(capsys, "check-event", str(config), str(events))
+    assert (code, err) == (cli.EXIT_OK, "")
+    assert printable(out) and len(out.splitlines()) == 2
+    assert "evil\\x1b]0;title\\x07\\x1b[31m\\x0a.xml" in out and "events\\x0d.jsonl" in out
 
 
 def test_check_event_prints_a_verdict_per_event(capsys: Capture, write: Writer) -> None:
