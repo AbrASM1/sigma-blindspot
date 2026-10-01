@@ -62,6 +62,8 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
   `events.py` (tags, event IDs, Sigma category mapping, unverified defaults), `semantics.py`
   (registry of documented and assumed semantics; `@assumes(...)` marks the code relying on an
   assumption, and a test keeps the README table in sync), `jsonl.py` (reads exported events).
+- `src/sigma_blindspot/decoding.py`: strict UTF-8 / UTF-16 (byte order mark) decoding shared by
+  the config parser and the event reader; expat only ever sees decoded text.
 - `src/sigma_blindspot/cli.py`: argparse with `doctor` (checks in `doctor.py`), `inspect`,
   `check-event`. `errors.py`: `ConfigError` and `EventError`, both `(message, line, source)`.
 - `tests/`: unit, CLI and property-based tests, 207 passing. CI runs on Windows and Linux.

@@ -29,11 +29,13 @@ uv run sigma-blindspot check-event CONFIG EVENTS
   line, then the event types left to the default behaviour.
 - `check-event` runs exported events through the emulator and prints, for each event, whether
   Sysmon logs or drops it and which configuration lines decide it. `EVENTS` is a JSON Lines file
-  (UTF-8 or UTF-16 with a byte order mark), one object per line:
+  one object per line:
   `{"EventID": 1, "Image": "C:\\Windows\\System32\\cmd.exe", "CommandLine": "cmd /c whoami"}`.
   Field values are strings, as in the Sysmon `EventData`.
 
-Configuration files are read as UTF-8 or UTF-16; a `DOCTYPE` declaration is rejected.
+Configuration and event files are read as UTF-8, with or without a byte order mark, or as UTF-16
+with a byte order mark. The XML encoding declaration is ignored and a `DOCTYPE` declaration is
+rejected.
 Output is ASCII-only. Exit codes: `0` success, `1` a `doctor` check failed or the reader closed
 the output early, `2` invalid input.
 

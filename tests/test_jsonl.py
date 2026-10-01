@@ -85,8 +85,7 @@ def test_rejects_invalid_events_with_their_line(line: str, message: str) -> None
     assert message in caught.value.message
 
 
-def test_rejects_undecodable_files_without_a_line() -> None:
+def test_rejects_undecodable_bytes_with_their_line() -> None:
     with pytest.raises(EventError) as caught:
-        parse_events(b'{"EventID": 1, "Image": "\xff"}\n', SOURCE)
-    assert caught.value.line is None
-    assert "not valid utf-8" in caught.value.message
+        parse_events(b'{"EventID": 4}\n{"EventID": 1, "Image": "\xff"}\n', SOURCE)
+    assert (caught.value.line, caught.value.message) == (2, "not valid utf-8: invalid start byte")

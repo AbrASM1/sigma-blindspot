@@ -334,3 +334,19 @@ def test_parsing_a_rendered_config_gives_back_its_model(
 ) -> None:
     text, expected = render(filters, encoding)
     assert parse_config(encode(text, encoding), SOURCE) == expected
+
+
+@pytest.mark.parametrize(
+    "declared", ["x-unknown", "shift_jis", "utf-32", "mbcs", "punycode", "base64"]
+)
+def test_reads_utf8_whatever_encoding_is_declared(declared: str) -> None:
+    text = f'<?xml version="1.0" encoding="{declared}"?>\n<Sysmon schemaversion="4.90"/>\n'
+    assert parse(text) == config_of()
+
+
+def test_rejects_bytes_that_are_not_utf8_with_their_line() -> None:
+    text = sysmon(FILTER_START, "      <Image>caf\u00e9.exe</Image>", FILTER_END)
+    with pytest.raises(ConfigError) as caught:
+        parse_config(text.encode("cp1252"), SOURCE)
+    assert caught.value.line == line_of(text, "caf")
+    assert caught.value.message.startswith("not valid utf-8: ")

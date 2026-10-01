@@ -8,6 +8,7 @@ from types import MappingProxyType
 from typing import Final, NoReturn
 from xml.parsers import expat
 
+from sigma_blindspot.decoding import decode_text
 from sigma_blindspot.errors import ConfigError
 from sigma_blindspot.sysmon.conditions import Operator
 from sigma_blindspot.sysmon.events import EventTag
@@ -57,6 +58,7 @@ class _OpenElement:
 
 
 def _read_tree(data: bytes, source: str) -> _Element:
+    document = decode_text(data, source, ConfigError)
     parser = expat.ParserCreate()
     parser.buffer_text = True
     stack = [_OpenElement("", {}, 0)]
@@ -79,7 +81,7 @@ def _read_tree(data: bytes, source: str) -> _Element:
     parser.CharacterDataHandler = text
     parser.StartDoctypeDeclHandler = doctype
     try:
-        parser.Parse(data, True)
+        parser.Parse(document, True)
     except expat.ExpatError as error:
         raise ConfigError(expat.ErrorString(error.code), error.lineno, source) from error
     return stack[0].children[0]
