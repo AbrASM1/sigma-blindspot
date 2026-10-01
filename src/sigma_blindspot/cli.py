@@ -1,8 +1,9 @@
 import argparse
+import hashlib
 import json
 import os
 import sys
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from importlib import metadata
 from pathlib import Path
 from types import MappingProxyType
@@ -10,10 +11,11 @@ from typing import Final
 
 from sigma_blindspot import doctor
 from sigma_blindspot.errors import SourceError
+from sigma_blindspot.report.html import Evaluated, EventsInput, render
 from sigma_blindspot.sysmon.events import EVENT_IDS_BY_TAG, EventTag, logged_without_filter
-from sigma_blindspot.sysmon.jsonl import load_events
+from sigma_blindspot.sysmon.jsonl import parse_events
 from sigma_blindspot.sysmon.model import Condition, Decision, EventFilter, Rule
-from sigma_blindspot.sysmon.parser import load_config
+from sigma_blindspot.sysmon.parser import parse_config
 
 EXIT_OK: Final = 0
 EXIT_FAILURE: Final = 1
@@ -67,6 +69,18 @@ def _describe_filter(event_filter: EventFilter) -> Iterator[tuple[int, str]]:
                 yield item.line, f"  {_describe_condition(item)}"
 
 
+def _sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _write_report(target: Path | None, inputs: Iterable[Path], report: Callable[[], str]) -> None:
+    if target is None:
+        return
+    if target.exists() and any(target.samefile(path) for path in inputs):
+        raise SourceError("refusing to overwrite an input file", None, str(target))
+    target.write_bytes(report().encode("utf-8"))
+
+
 def _verdict(decision: Decision, config_source: str) -> str:
     state = "LOGGED" if decision.logged else "DROPPED"
     where = ", ".join(f"{config_source}:{line}" for line in decision.lines)
@@ -83,7 +97,11 @@ def _doctor(_: argparse.Namespace) -> int:
 
 
 def _inspect(arguments: argparse.Namespace) -> int:
-    config = load_config(arguments.config)
+    data = arguments.config.read_bytes()
+    config = parse_config(data, str(arguments.config))
+    _write_report(
+        arguments.html, (arguments.config,), lambda: render(_version(), config, _sha256(data))
+    )
     _out(f"{config.source}: schema {config.schema_version}, {len(config.filters)} filters")
     for event_filter in config.filters:
         for line, text in _describe_filter(event_filter):
@@ -97,14 +115,23 @@ def _inspect(arguments: argparse.Namespace) -> int:
 
 
 def _check_event(arguments: argparse.Namespace) -> int:
-    config = load_config(arguments.config)
-    events = load_events(arguments.events)
-    decisions = [(line, event, config.evaluate(event)) for line, event in events]
-    for line, event, decision in decisions:
-        verdict = _verdict(decision, config.source)
-        _out(f"{arguments.events}:{line}: EventID {event.event_id} {verdict}")
-    logged = sum(decision.logged for _, _, decision in decisions)
-    _out(f"{len(decisions)} events: {logged} logged, {len(decisions) - logged} dropped")
+    config_data = arguments.config.read_bytes()
+    config = parse_config(config_data, str(arguments.config))
+    events_data = arguments.events.read_bytes()
+    evaluated = tuple(
+        Evaluated(line, event, config.evaluate(event))
+        for line, event in parse_events(events_data, str(arguments.events))
+    )
+    events = EventsInput(str(arguments.events), _sha256(events_data), evaluated)
+    inputs = (arguments.config, arguments.events)
+    _write_report(
+        arguments.html, inputs, lambda: render(_version(), config, _sha256(config_data), events)
+    )
+    for item in evaluated:
+        verdict = _verdict(item.decision, config.source)
+        _out(f"{events.source}:{item.line}: EventID {item.event.event_id} {verdict}")
+    logged = sum(item.decision.logged for item in evaluated)
+    _out(f"{len(evaluated)} events: {logged} logged, {len(evaluated) - logged} dropped")
     return EXIT_OK
 
 
@@ -126,6 +153,10 @@ def _parser() -> argparse.ArgumentParser:
     check = commands.add_parser("check-event", help="emulate Sysmon filtering on exported events")
     check.add_argument("config", type=Path, metavar="CONFIG")
     check.add_argument("events", type=Path, metavar="EVENTS", help="JSON Lines event export")
+    for command in (inspect, check):
+        command.add_argument(
+            "--html", type=Path, metavar="FILE", help="also write an HTML report to FILE"
+        )
     return parser
 
 
