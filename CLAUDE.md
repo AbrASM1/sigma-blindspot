@@ -32,8 +32,9 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
    unknown semantics gives `UNKNOWN` with a reason. `BLIND` only when Z3 returns UNSAT.
 2. The emulator (`SysmonConfig.evaluate`) is the reference. A Z3 encoding is trusted only once it
    agrees with the emulator on generated events (Hypothesis).
-3. Undocumented Sysmon behaviour is an assumption: mark it in the code, keep the README table
-   "Sysmon semantics implemented" in sync, and flip it to verified only after a lab probe.
+3. Undocumented Sysmon behaviour is an assumption: mark it in the code, keep the table
+   "Sysmon semantics implemented" in `docs/reference.md` in sync, and flip it to verified only
+   after a lab probe.
 4. Never invent results. No benchmark figure, percentage or claim in README or docs unless it
    comes from a reproducible command in this repo.
 5. Light and fast: the only runtime dependencies are `pysigma` and `z3-solver` (pinned
@@ -63,7 +64,8 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
   SysmonConfig = the reference emulator), `conditions.py` (the 16 documented operators),
   `events.py` (tags, event IDs, Sigma category mapping, unverified defaults), `semantics.py`
   (registry of documented and assumed semantics; `@assumes(...)` marks the code relying on an
-  assumption, and a test keeps the README table in sync), `jsonl.py` (reads exported events).
+  assumption, and a test keeps the table in `docs/reference.md` in sync), `jsonl.py` (reads
+  exported events).
 - `src/sigma_blindspot/decoding.py`: strict UTF-8 / UTF-16 (byte order mark) decoding shared by
   the config parser and the event reader; expat only ever sees decoded text.
 - `src/sigma_blindspot/cli.py`: argparse with `doctor` (checks in `doctor.py`), `inspect`,
@@ -97,7 +99,8 @@ items of a `;` list ignored; case-insensitivity following the Unicode lower-case
     Steps: emulator prediction on `event.json`; apply the config with `sysmon -c` (admin); run
     the trigger with a unique marker in the command line or file name; search the log for the
     marker; print PREDICTED vs OBSERVED; always restore the baseline config (try/finally).
-  - One probe per assumption listed above. Each probe result updates the README table.
+  - One probe per assumption listed above. Each probe result updates the table in
+    `docs/reference.md`.
   - Differential run: the same actions under a log-everything config and under a target
     config; the emulator must predict exactly which events disappear.
 - [ ] B. Sigma loading in `src/sigma_blindspot/sigma/`: Windows rules whose category is in
