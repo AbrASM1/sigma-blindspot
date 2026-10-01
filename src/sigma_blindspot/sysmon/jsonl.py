@@ -1,30 +1,16 @@
-import codecs
 import json
 from collections import Counter
 from pathlib import Path
 from typing import Final
 
+from sigma_blindspot.decoding import decode_text
 from sigma_blindspot.errors import EventError
 from sigma_blindspot.sysmon.model import Event
 
 EVENT_ID_KEY: Final = "EventID"
 _JSON_WHITESPACE: Final = " \t\r\n"
-_BOM_ENCODINGS: Final = (
-    (codecs.BOM_UTF8, "utf-8-sig"),
-    (codecs.BOM_UTF16_LE, "utf-16"),
-    (codecs.BOM_UTF16_BE, "utf-16"),
-)
 
 type NumberedEvent = tuple[int, Event]
-
-
-def _decode(data: bytes, source: str) -> str:
-    encoding = next((name for bom, name in _BOM_ENCODINGS if data.startswith(bom)), "utf-8")
-    try:
-        return data.decode(encoding)
-    except UnicodeDecodeError as error:
-        message = f"not valid {encoding}: {error.reason} at byte {error.start}"
-        raise EventError(message, None, source) from error
 
 
 def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
@@ -59,7 +45,7 @@ def _parse_event(line: str, number: int, source: str) -> Event:
 
 
 def parse_events(data: bytes, source: str) -> tuple[NumberedEvent, ...]:
-    lines = _decode(data, source).split("\n")
+    lines = decode_text(data, source, EventError).split("\n")
     return tuple(
         (number, _parse_event(line, number, source))
         for number, line in enumerate(lines, start=1)
