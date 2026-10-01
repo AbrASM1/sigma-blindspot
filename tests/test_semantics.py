@@ -8,9 +8,9 @@ SOURCES = ROOT / "src" / "sigma_blindspot"
 HEADING = "## Sysmon semantics implemented"
 
 
-def readme_rows() -> list[tuple[str, ...]]:
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    section = readme.split(HEADING, 1)[1].split("\n## ", 1)[0]
+def documented_rows() -> list[tuple[str, ...]]:
+    reference = (ROOT / "docs" / "reference.md").read_text(encoding="utf-8")
+    section = reference.split(HEADING, 1)[1].split("\n## ", 1)[0]
     rows = [line for line in section.splitlines() if line.startswith("|")][2:]
     return [tuple(cell.strip() for cell in row.strip("|").split("|")) for row in rows]
 
@@ -24,10 +24,10 @@ def marked_semantics() -> set[str]:
     return set(re.findall(r"\bSemantic\.([A-Z_]+)\b", code))
 
 
-def test_readme_table_matches_the_semantics_registry() -> None:
+def test_reference_table_matches_the_semantics_registry() -> None:
     expected = [(semantic.behaviour, semantic.status.value) for semantic in Semantic]
     table = "\n".join(f"| {behaviour} | {status} |" for behaviour, status in expected)
-    assert readme_rows() == expected, f"README table must list, in order:\n{table}"
+    assert documented_rows() == expected, f"docs/reference.md table must list, in order:\n{table}"
 
 
 def test_every_assumption_is_marked_in_the_code() -> None:
