@@ -18,6 +18,9 @@ from sigma_blindspot.sysmon.parser import load_config
 EXIT_OK: Final = 0
 EXIT_FAILURE: Final = 1
 EXIT_ERROR: Final = 2
+_CONTROL_ESCAPES: Final = MappingProxyType(
+    {code: f"\\x{code:02x}" for code in (*range(0x20), 0x7F)}
+)
 
 
 def _version() -> str:
@@ -25,7 +28,7 @@ def _version() -> str:
 
 
 def _ascii(text: str) -> str:
-    return text.encode("ascii", "backslashreplace").decode("ascii")
+    return text.translate(_CONTROL_ESCAPES).encode("ascii", "backslashreplace").decode("ascii")
 
 
 def _out(text: str) -> None:
