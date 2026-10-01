@@ -94,6 +94,96 @@ xml_filters = st.builds(
 )
 xml_documents = st.lists(xml_filters, max_size=5).map(tuple)
 
+XML_PROLOGS: Final = (
+    "",
+    '<?xml version="1.0"?>',
+    '<?xml version="1.0" encoding="x-unknown"?>',
+    '<?xml version="1.0" encoding="shift_jis"?>',
+    '<?xml version="1.0" encoding="UTF-16"?>',
+    '<?xml version="1.0" encoding="base64"?>',
+    "<!DOCTYPE Sysmon>",
+)
+XML_FRAGMENTS: Final = (
+    '<?xml version="1.0"?>',
+    "<!DOCTYPE Sysmon>",
+    '<!DOCTYPE x [<!ENTITY e "x">]>',
+    "<!-- comment -->",
+    "<?pi data?>",
+    "<![CDATA[x]]>",
+    '<Sysmon schemaversion="4.90">',
+    "<Sysmon>",
+    "</Sysmon>",
+    "<EventFiltering>",
+    "</EventFiltering>",
+    '<RuleGroup groupRelation="or">',
+    '<RuleGroup name="" groupRelation="and">',
+    "</RuleGroup>",
+    '<ProcessCreate onmatch="include">',
+    '<ProcessCreate onmatch="exclude">',
+    "</ProcessCreate>",
+    '<Rule groupRelation="and">',
+    '<Rule name="r" groupRelation="or">',
+    "</Rule>",
+    '<Image condition="contains">',
+    '<Image condition="Contains">',
+    "<Image>",
+    "</Image>",
+    "<Image/>",
+    "cmd.exe",
+    ";",
+    " ",
+    "\n",
+    "&amp;",
+    "&undefined;",
+    "&#0;",
+    "&#x1F600;",
+    "\u00e9",
+    "\u2028",
+    "<",
+    "&",
+)
+JSON_FRAGMENTS: Final = (
+    "{",
+    "}",
+    "[",
+    "]",
+    '"EventID"',
+    '"Image"',
+    ":",
+    ",",
+    "1",
+    "30",
+    "-1",
+    "1.0",
+    "1e400",
+    "true",
+    "null",
+    '"x"',
+    '"\\ud800"',
+    '"\\u0000"',
+    "9" * 5000,
+    '{"EventID": 1, "Image": "a"}',
+    '{"EventID": 4}',
+    "\n",
+    "\r\n",
+    " ",
+)
+
+
+def _splice(data: bytes, noise: bytes, at: int) -> bytes:
+    index = at % (len(data) + 1)
+    return data[:index] + noise + data[index:]
+
+
+def fuzzed(
+    fragments: tuple[str, ...], prologs: tuple[str, ...] = ("",)
+) -> st.SearchStrategy[bytes]:
+    bodies = st.lists(st.sampled_from(fragments), max_size=40).map("".join)
+    texts = st.builds(str.__add__, st.sampled_from(prologs), bodies)
+    return st.builds(
+        _splice, st.builds(encode, texts, encodings), st.binary(max_size=3), st.integers(0)
+    )
+
 
 def config_of(*filters: EventFilter) -> SysmonConfig:
     return SysmonConfig("4.90", filters, SOURCE)

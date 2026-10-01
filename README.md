@@ -83,3 +83,6 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy
 ```
+
+`HYPOTHESIS_PROFILE=intensive uv run pytest` runs every property with 10,000 examples instead of
+the default 100.

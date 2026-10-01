@@ -5,9 +5,10 @@ from pathlib import Path
 import pytest
 from hypothesis import settings
 
-settings.register_profile("ci", derandomize=True, deadline=None, print_blob=True)
 settings.register_profile("dev", deadline=None)
-settings.load_profile("ci" if os.environ.get("CI") else "dev")
+settings.register_profile("ci", derandomize=True, deadline=None, print_blob=True)
+settings.register_profile("intensive", max_examples=10_000, deadline=None, print_blob=True)
+settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "ci" if os.environ.get("CI") else "dev"))
 
 type Writer = Callable[[str, str | bytes], Path]
 

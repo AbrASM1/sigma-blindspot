@@ -1,7 +1,17 @@
 import pytest
 from conftest import DOC_RULE_GROUPS, DOC_SAMPLE, Writer, line_of
 from hypothesis import given
-from strategies import SOURCE, config_of, encode, encodings, render, xml_documents
+from strategies import (
+    SOURCE,
+    XML_FRAGMENTS,
+    XML_PROLOGS,
+    config_of,
+    encode,
+    encodings,
+    fuzzed,
+    render,
+    xml_documents,
+)
 
 from sigma_blindspot.errors import ConfigError
 from sigma_blindspot.sysmon.conditions import Operator
@@ -350,3 +360,11 @@ def test_rejects_bytes_that_are_not_utf8_with_their_line() -> None:
         parse_config(text.encode("cp1252"), SOURCE)
     assert caught.value.line == line_of(text, "caf")
     assert caught.value.message.startswith("not valid utf-8: ")
+
+
+@given(data=fuzzed(XML_FRAGMENTS, XML_PROLOGS))
+def test_any_input_is_parsed_or_rejected_with_a_config_error(data: bytes) -> None:
+    try:
+        parse_config(data, SOURCE)
+    except ConfigError as error:
+        assert error.source == SOURCE and error.line is not None and error.line >= 1
