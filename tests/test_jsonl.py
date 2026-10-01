@@ -50,6 +50,12 @@ def test_skips_blank_lines_and_keeps_line_numbers() -> None:
     )
 
 
+def test_only_line_feeds_separate_events() -> None:
+    value = "a b c\u0085d"
+    text = json.dumps({"EventID": 1, "CommandLine": value}, ensure_ascii=False) + "\r\n"
+    assert parse_events(text.encode(), SOURCE) == ((1, Event(1, {"CommandLine": value})),)
+
+
 def test_load_events_reads_a_file(write: Writer) -> None:
     path = write("events.jsonl", '{"EventID": 11, "TargetFilename": "a"}\n')
     assert load_events(path) == ((1, Event(11, {"TargetFilename": "a"})),)
