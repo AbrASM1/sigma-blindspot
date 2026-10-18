@@ -61,7 +61,7 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - Tests locate config lines with `conftest.line_of()`, never with hard-coded line numbers.
 - Small commits, imperative mood, prefixed `feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`.
 
-## Current state (milestone C2)
+## Current state (milestone A)
 
 - `src/sigma_blindspot/sysmon/`: `parser.py` (stdlib expat, keeps line numbers, rejects DOCTYPE,
   reads UTF-8 and UTF-16, condition names ignore ASCII case), `model.py` (Event, Condition, Rule,
@@ -94,7 +94,10 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
   checked in Python when simple, else as one regex membership in Z3; minimized conflicts become
   lemmas; A-Z excluded), `prove.py` (verdicts per event ID, branch and rule; one Z3 context per
   rule).
-- `tests/`: unit, CLI, property-based and fuzz tests, 329 passing; `test_sources.py` rejects
+- `lab/`: `Export-SysmonEvents.ps1`, `Invoke-Probe.ps1` (PREDICTED against OBSERVED, baseline
+  config restored in `finally`), probes `p1-defaults` to `p7-empty-list-items`. Written and linted
+  (PSScriptAnalyzer, 0 findings), not run yet: only the maintainer runs them, on the VM.
+- `tests/`: unit, CLI, property-based and fuzz tests, 338 passing; `test_sources.py` rejects
   hidden characters in tracked files. CI runs on Windows and Linux.
 
 ## Sysmon semantics
@@ -134,8 +137,9 @@ text output of `inspect` and `check-event`, and `decoding.py` are frozen until E
 - [x] C2. `analyze CONFIG RULES... [--format text|json] [--fail-on-blind] [--timeout-ms N]
   [--jobs N]`: exit 0, 1 (BLIND or PARTIAL with `--fail-on-blind`), 2 (invalid config or a
   missing rules path); fixtures in `tests/fixtures/`.
-- [ ] A. Lab kit in `lab/` (PowerShell 5.1 and 7): `Export-SysmonEvents.ps1`, `Invoke-Probe.ps1`,
-  probes P1 (defaults) to P7; raw results in `lab/results/<probe>.md`.
+- [x] A. Lab kit in `lab/` (PowerShell 5.1 and 7): `Export-SysmonEvents.ps1`, `Invoke-Probe.ps1`,
+  probes P1 (defaults) to P7; raw results in `lab/results/<probe>.md` once the maintainer has run
+  them on the VM.
 - [ ] D. SigmaHQ regression validation: `scripts/fetch_sigmahq.py` at a pinned commit; the
   evaluator, the rule encoding and the prover checked against the JSON samples; manual workflow.
 - [ ] E. Reports: `--format markdown`, `--format sarif` (2.1.0), `--navigator FILE`.

@@ -1,0 +1,11 @@
+<Sysmon schemaversion="4.90">
+  <EventFiltering>
+    <ProcessCreate onmatch="include">
+      <Image condition="end with">\cmd.exe</Image>
+      <Rule groupRelation="or">
+        <CommandLine condition="contains">MARKER-1</CommandLine>
+        <CommandLine condition="contains">MARKER-2</CommandLine>
+      </Rule>
+    </ProcessCreate>
+  </EventFiltering>
+</Sysmon>
