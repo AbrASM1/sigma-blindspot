@@ -33,6 +33,10 @@ class Semantic(Enum):
         Status.DOCUMENTED,
         "Without a filter, NetworkConnect (3) and ImageLoad (7) are not logged",
     )
+    CONDITION_NAME_CASE = (
+        Status.ASSUMED,
+        "Condition names ignore ASCII case: `Contains` is `contains`",
+    )
     LEXICAL_COMPARISON = (
         Status.ASSUMED,
         "`less than` and `more than` compare lower-cased values lexically",

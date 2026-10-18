@@ -52,6 +52,7 @@ lab probe. `tests/test_semantics.py` keeps this table in sync with
 | `image` matches the full path or the bare image name | documented |
 | Event IDs 4, 16 and 255 cannot be filtered | documented |
 | Without a filter, NetworkConnect (3) and ImageLoad (7) are not logged | documented |
+| Condition names ignore ASCII case: `Contains` is `contains` | assumed |
 | `less than` and `more than` compare lower-cased values lexically | assumed |
 | Leading and trailing whitespace in values is compared literally | assumed |
 | Several filters with the same tag and `onmatch` combine with OR | assumed |
@@ -69,5 +70,4 @@ lab probe. `tests/test_semantics.py` keeps this table in sync with
   P1 settles it.
 - Field names are not checked against the Sysmon schema: a misspelled field is accepted and its
   conditions never match.
-- Condition names must be spelled exactly as documented: `condition="Contains"` is rejected.
 - UTF-16 files need a byte order mark.

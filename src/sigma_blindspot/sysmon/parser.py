@@ -1,5 +1,6 @@
 import re
-from collections.abc import Mapping
+import string
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
 from itertools import chain
@@ -28,6 +29,7 @@ _RULE_GROUP: Final = "RuleGroup"
 _RULE: Final = "Rule"
 _XML_WHITESPACE: Final = " \t\r\n"
 _SCHEMA_VERSION: Final = re.compile(r"[0-9]+\.[0-9]+")
+_ASCII_LOWER: Final = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,8 +89,13 @@ def _read_tree(data: bytes, source: str) -> _Element:
     return stack[0].children[0]
 
 
-def _member[E: StrEnum](kind: type[E], raw: str | None) -> E | None:
+def _member[E: StrEnum](kind: type[E], raw: str) -> E | None:
     return next((candidate for candidate in kind if candidate == raw), None)
+
+
+@assumes(Semantic.CONDITION_NAME_CASE)
+def _condition_name(raw: str) -> str:
+    return raw.translate(_ASCII_LOWER)
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,10 +123,15 @@ class _Interpreter:
             self.fail(element, f"<{element.tag}> cannot contain text")
 
     def choice[E: StrEnum](
-        self, element: _Element, attribute: str, kind: type[E], default: E | None = None
+        self,
+        element: _Element,
+        attribute: str,
+        kind: type[E],
+        default: E | None = None,
+        normalize: Callable[[str], str] = str,
     ) -> E:
         raw = element.attributes.get(attribute, default)
-        member = _member(kind, raw)
+        member = None if raw is None else _member(kind, normalize(raw))
         if member is None:
             allowed = ", ".join(repr(candidate.value) for candidate in kind)
             self.fail(element, f"<{element.tag}> {attribute}={raw!r} is not one of {allowed}")
@@ -181,7 +193,7 @@ class _Interpreter:
         self.check(element, optional=("condition", "name"))
         if element.children:
             self.fail(element.children[0], f"field <{element.tag}> cannot contain elements")
-        operator = self.choice(element, "condition", Operator, Operator.IS)
+        operator = self.choice(element, "condition", Operator, Operator.IS, _condition_name)
         name = element.attributes.get("name")
         return Condition(element.tag, operator, element.text, element.line, name)
 
