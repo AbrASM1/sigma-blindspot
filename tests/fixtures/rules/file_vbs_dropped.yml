@@ -1,6 +1,9 @@
 title: VBScript file written
 id: 3c4d5e6f-7a8b-4c9d-8e0f-6a7b8c9d0e17
 status: test
+tags:
+    - attack.execution
+    - attack.t1059.005
 logsource:
     category: file_event
     product: windows

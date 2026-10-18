@@ -1,6 +1,9 @@
 title: Debug help library loaded
 id: 8e9f0a1b-2c3d-4e5f-9a6b-7c8d9e0f1a28
 status: test
+tags:
+    - attack.credential-access
+    - attack.t1003.001
 logsource:
     category: image_load
     product: windows

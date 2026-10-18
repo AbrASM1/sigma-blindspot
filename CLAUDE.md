@@ -24,6 +24,8 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
   10,000 examples per property, for deep checks before a release
 - `uv run sigma-blindspot doctor | inspect CONFIG | check-event CONFIG EVENTS`, `--html FILE`
   on the last two also writes a self-contained HTML report
+- `uv run sigma-blindspot analyze CONFIG RULES... [--format text|json|markdown|sarif]
+  [--navigator FILE] [--fail-on-blind] [--timeout-ms N] [--jobs N]`
 - `uv run python scripts/validate_regression.py`: fetches SigmaHQ and five public configs at
   pinned versions into the gitignored `.cache/` (network), then checks the evaluator, the encoding
   and the prover on SigmaHQ's regression samples; report in `.cache/regression.md`
@@ -64,7 +66,7 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - Tests locate config lines with `conftest.line_of()`, never with hard-coded line numbers.
 - Small commits, imperative mood, prefixed `feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`.
 
-## Current state (milestone D)
+## Current state (milestone E)
 
 - `src/sigma_blindspot/sysmon/`: `parser.py` (stdlib expat, keeps line numbers, rejects DOCTYPE,
   reads UTF-8 and UTF-16, condition names ignore ASCII case), `model.py` (Event, Condition, Rule,
@@ -77,14 +79,16 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - `src/sigma_blindspot/decoding.py`: strict UTF-8 / UTF-16 (byte order mark) decoding shared by
   the config parser and the event reader; expat only ever sees decoded text.
 - `src/sigma_blindspot/cli.py`: argparse with `doctor` (checks in `doctor.py`), `inspect`,
-  `check-event` (`LOGGED`, `DROPPED` or `UNKNOWN` per event), `analyze` (text or JSON,
-  `--fail-on-blind`, `--timeout-ms`, `--jobs`). `errors.py`: `ConfigError` and `EventError`, both
+  `check-event` (`LOGGED`, `DROPPED` or `UNKNOWN` per event), `analyze` (text, JSON, Markdown
+  or SARIF, `--navigator`, `--fail-on-blind`, `--timeout-ms`, `--jobs`). `errors.py`: `ConfigError` and `EventError`, both
   `(message, line, source)`. `runner.py`: `prove_all()`, one `Prover` per worker process, same
   output for any `--jobs`.
 - `src/sigma_blindspot/report/html.py`: pure `render()` of the HTML report (stdlib only, no
   JavaScript, CSP pinned to the embedded stylesheet hash, every input string escaped).
-  `report/analysis.py`: results sorted by verdict then path, text lines, JSON document
-  (`schema_version` 1).
+  `report/analysis.py`: `Analysis` (the input of every format), results sorted by verdict then
+  path, text lines, JSON document (`schema_version` 1). `markdown.py` (rules grouped by config
+  line, every rule string escaped), `sarif.py` (SARIF 2.1.0),
+  `navigator.py` (ATT&CK Navigator layer 4.5 of the techniques whose rules are all BLIND).
 - `src/sigma_blindspot/sigma/`: `ir.py` (LoadedRule with top-level OR branches; And, Or, Not,
   Match, Unsupported; Equals, Prefix, Suffix, Contains, Glob with folded literals), `loader.py`
   (the only module importing pySigma: files and directories, scope check, SKIPPED entries,
@@ -103,7 +107,7 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - `scripts/`: `fetch_sigmahq.py`, `fetch_configs.py` (pinned commit, URLs and SHA-256),
   `validate_regression.py` (no mismatch at the pinned SigmaHQ commit on the five configs);
   `.github/workflows/regression.yml` runs it on demand.
-- `tests/`: unit, CLI, property-based and fuzz tests, 350 passing; `test_sources.py` rejects
+- `tests/`: unit, CLI, property-based and fuzz tests, 368 passing; `test_sources.py` rejects
   hidden characters in tracked files. CI runs on Windows and Linux.
 
 ## Sysmon semantics
@@ -148,7 +152,8 @@ text output of `inspect` and `check-event`, and `decoding.py` are frozen until E
   them on the VM.
 - [x] D. SigmaHQ regression validation: `scripts/fetch_sigmahq.py` at a pinned commit; the
   evaluator, the rule encoding and the prover checked against the JSON samples; manual workflow.
-- [ ] E. Reports: `--format markdown`, `--format sarif` (2.1.0), `--navigator FILE`.
+- [x] E. Reports: `--format markdown`, `--format sarif` (2.1.0), `--navigator FILE` (layer 4.5).
+  Cut: the `analyze` section of the HTML report (optional in the plan).
 - [ ] F. Benchmark `bench/run.py`, only after D passes and P1 is resolved; the maintainer approves
   the numbers before `bench/results.md` is committed.
 - Out of scope: regex, CIDR and null support; a field check against the Sysmon schema; PyPI.

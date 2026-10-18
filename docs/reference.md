@@ -28,6 +28,18 @@
   SHA-256), `summary` (count per verdict) and `results`. Each result has the verdict, the rule
   path, title, id, category, event IDs, tags, reason and lines, an `example` event for `OK` and
   `PARTIAL`, and `branches` with one finding per event ID.
+- `--format markdown`: the count per verdict, then the `BLIND` and `PARTIAL` rules grouped by
+  responsible configuration line, the lines blinding the most rules first. A rule appears under
+  each of its lines; rules without one (an event type not logged without a filter) come last.
+  Rule text is escaped, so a title cannot inject Markdown or HTML.
+- `--format sarif`: SARIF 2.1.0, one result per `BLIND` or `PARTIAL` rule. The primary location
+  is the first responsible configuration line, or the configuration file when no line is
+  responsible; the related locations are the rule file and the other responsible lines, and the
+  result carries the rule's tags. The configuration is listed with its SHA-256.
+- `--navigator FILE` also writes an ATT&CK Navigator layer (format 4.5, enterprise domain,
+  Windows): the techniques of the `attack.tXXXX` tags whose analysed rules are all `BLIND`. A
+  technique with one rule that can fire, or that is not decided, is left out. `FILE` is never
+  one of the inputs.
 - `--timeout-ms N` limits each Z3 check (default 2000). `--jobs N` proves rules in N worker
   processes; the output is the same as with one.
 - A rule file that fails to load is reported as `SKIPPED` and never stops the analysis.
