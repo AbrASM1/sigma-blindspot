@@ -1,0 +1,11 @@
+title: Outbound SMB from rundll32
+id: 6d5c4b3a-2f1e-4d0c-9b8a-5d6e7f8a9b06
+status: test
+logsource:
+    category: network_connection
+    product: windows
+detection:
+    selection:
+        Image|endswith: '\rundll32.exe'
+        DestinationPort: 445
+    condition: selection

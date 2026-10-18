@@ -1,0 +1,10 @@
+title: Random looking executable name
+id: 1f2e3d4c-5b6a-4978-8a9b-4c5d6e7f8a95
+status: test
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image|re: '\\[a-z]{12}\.exe$'
+    condition: selection

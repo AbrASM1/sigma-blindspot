@@ -9,11 +9,28 @@
   an unknown condition, an empty `<Rule>` or text where only elements belong raise an error
   instead of guessing what Sysmon would do.
 - Configuration and event errors go to stderr as `error: FILE:LINE: message`.
-- `doctor`, `inspect` and `check-event` print only printable ASCII, errors included. Any other
-  character, including a control character in a file name, is escaped, so output redirected on
-  Windows (cp1252) stays readable and a file name cannot inject terminal escape sequences.
-- Exit codes: `0` success, `1` a `doctor` check failed or the reader closed the output early,
-  `2` invalid input.
+- Every command prints only printable ASCII, errors included. Any other character, including a
+  control character in a file name, is escaped, so output redirected on Windows (cp1252) stays
+  readable and a file name cannot inject terminal escape sequences.
+- Exit codes: `0` success, `1` a `doctor` check failed, `analyze --fail-on-blind` found a `BLIND`
+  or `PARTIAL` rule, or the reader closed the output early, `2` invalid input (configuration,
+  events, or a rules path that does not exist).
+
+## analyze
+
+`analyze CONFIG RULES...` proves every rule found in `RULES` (files, or directories searched for
+`*.yml`) against `CONFIG`.
+
+- Text output: one line per rule, sorted by verdict (`BLIND`, `PARTIAL`, `RULE_UNSAT`, `UNKNOWN`,
+  `OK`, `SKIPPED`) then by path, with the title, the category and its event IDs, the reason and
+  the configuration lines responsible. A summary line counts each verdict.
+- `--format json`: `schema_version` (1), `tool` (name and version), `config` (path and
+  SHA-256), `summary` (count per verdict) and `results`. Each result has the verdict, the rule
+  path, title, id, category, event IDs, tags, reason and lines, an `example` event for `OK` and
+  `PARTIAL`, and `branches` with one finding per event ID.
+- `--timeout-ms N` limits each Z3 check (default 2000). `--jobs N` proves rules in N worker
+  processes; the output is the same as with one.
+- A rule file that fails to load is reported as `SKIPPED` and never stops the analysis.
 
 ## HTML report
 

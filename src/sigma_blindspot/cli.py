@@ -12,7 +12,12 @@ from typing import Final
 
 from sigma_blindspot import doctor
 from sigma_blindspot.errors import SourceError
+from sigma_blindspot.prover.prove import DEFAULT_TIMEOUT_MS, Verdict
+from sigma_blindspot.report.analysis import Result, json_document, text_lines, verdict_of
 from sigma_blindspot.report.html import Evaluated, EventsInput, render
+from sigma_blindspot.runner import prove_all
+from sigma_blindspot.sigma.ir import LoadedRule, Skipped
+from sigma_blindspot.sigma.loader import load_rules
 from sigma_blindspot.sysmon.events import EVENT_IDS_BY_TAG, EventTag, default_without_filter
 from sigma_blindspot.sysmon.jsonl import parse_events
 from sigma_blindspot.sysmon.model import Condition, Decision, EventFilter, Rule
@@ -27,6 +32,7 @@ _CONTROL_ESCAPES: Final = MappingProxyType(
 _STATES: Final[Mapping[bool | None, str]] = MappingProxyType(
     {True: "LOGGED", False: "DROPPED", None: "UNKNOWN"}
 )
+_FAILING: Final[frozenset[str]] = frozenset({Verdict.BLIND, Verdict.PARTIAL})
 
 
 def _version() -> str:
@@ -141,9 +147,33 @@ def _check_event(arguments: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _analyze(arguments: argparse.Namespace) -> int:
+    data = arguments.config.read_bytes()
+    config = parse_config(data, str(arguments.config))
+    loaded = load_rules(arguments.rules)
+    rules = [item for item in loaded if isinstance(item, LoadedRule)]
+    proofs = prove_all(config, data, rules, arguments.timeout_ms, arguments.jobs)
+    results: list[Result] = [*proofs, *(item for item in loaded if isinstance(item, Skipped))]
+    if arguments.format == "json":
+        lines = json_document(_version(), config.source, _sha256(data), results).splitlines()
+    else:
+        lines = list(text_lines(config.source, results))
+    for line in lines:
+        _out(line)
+    failing = any(verdict_of(result) in _FAILING for result in results)
+    return EXIT_FAILURE if arguments.fail_on_blind and failing else EXIT_OK
+
+
 _COMMANDS: Final[Mapping[str, Callable[[argparse.Namespace], int]]] = MappingProxyType(
-    {"doctor": _doctor, "inspect": _inspect, "check-event": _check_event}
+    {"doctor": _doctor, "inspect": _inspect, "check-event": _check_event, "analyze": _analyze}
 )
+
+
+def _positive(text: str) -> int:
+    value = int(text)
+    if value < 1:
+        raise argparse.ArgumentTypeError(f"must be at least 1, got {value}")
+    return value
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -163,6 +193,25 @@ def _parser() -> argparse.ArgumentParser:
         command.add_argument(
             "--html", type=Path, metavar="FILE", help="also write an HTML report to FILE"
         )
+    analyze = commands.add_parser("analyze", help="prove which Sigma rules can never fire")
+    analyze.add_argument("config", type=Path, metavar="CONFIG")
+    analyze.add_argument(
+        "rules", type=Path, nargs="+", metavar="RULES", help="Sigma rule files or directories"
+    )
+    analyze.add_argument("--format", choices=("text", "json"), default="text")
+    analyze.add_argument(
+        "--fail-on-blind", action="store_true", help="exit with 1 if a rule is BLIND or PARTIAL"
+    )
+    analyze.add_argument(
+        "--timeout-ms",
+        type=_positive,
+        default=DEFAULT_TIMEOUT_MS,
+        metavar="N",
+        help=f"Z3 time limit per check (default {DEFAULT_TIMEOUT_MS})",
+    )
+    analyze.add_argument(
+        "--jobs", type=_positive, default=1, metavar="N", help="worker processes (default 1)"
+    )
     return parser
 
 

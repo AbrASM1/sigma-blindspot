@@ -1,0 +1,10 @@
+title: Child process of the SCCM client
+id: 7e3a9b1c-2d4f-4e6a-8b0c-1d2e3f4a5b62
+status: test
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        ParentImage|endswith: '\ccmexec.exe'
+    condition: selection
