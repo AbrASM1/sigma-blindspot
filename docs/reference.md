@@ -105,6 +105,27 @@ How the verdicts are computed:
   depend on the other rules or on the order they are proved in.
 - Each check has a timeout, 2000 ms by default. A timeout gives `UNKNOWN`.
 
+## Validation on SigmaHQ regression data
+
+`uv run python scripts/validate_regression.py` checks the evaluator, the rule encoding and the
+prover on real events. It needs network access: it fetches SigmaHQ at a pinned commit (a sparse
+clone of `rules/windows` and `regression_data` into `.cache/sigmahq`) and five public Sysmon
+configurations pinned by URL and SHA-256 (into `.cache/configs`). Neither is committed; the
+tests never use the network.
+
+For every Sysmon sample of a rule in scope (the JSON export next to each `.evtx`):
+
+1. Evaluator: it matches at least the sample's `match_count` events, or one event when the count
+   is missing, which is SigmaHQ's own pass criterion.
+2. Encoding: for each supported branch that the evaluator matches on a sample event, the Z3
+   encoding of the branch with every field pinned to the event's values is satisfiable.
+3. Prover: for each configuration that logs a matching sample event, the prover never says
+   `BLIND`, `DISABLED` or `RULE_UNSAT` for that event ID.
+
+The report goes to `.cache/regression.md`, and the script exits with 1 on any mismatch. The
+manual workflow `SigmaHQ regression` runs it and uploads the report. The samples are positive
+detections only: the validation can catch a wrong `BLIND`, not a missed one.
+
 ## Sysmon semantics implemented
 
 `documented` rows come from the
