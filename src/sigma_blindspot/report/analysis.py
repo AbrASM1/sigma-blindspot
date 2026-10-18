@@ -1,6 +1,7 @@
 import json
 from collections import Counter
 from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
 from typing import Final
 
 from sigma_blindspot.prover.prove import BranchProof, Example, Finding, Proof, Verdict
@@ -9,8 +10,18 @@ from sigma_blindspot.sysmon.model import Lines
 
 type Result = Proof | Skipped
 
+
+@dataclass(frozen=True, slots=True)
+class Analysis:
+    version: str
+    config_source: str
+    config_sha256: str
+    results: tuple[Result, ...]
+
+
 SCHEMA_VERSION: Final = 1
 SKIPPED: Final = "SKIPPED"
+FAILING: Final = frozenset({Verdict.BLIND, Verdict.PARTIAL})
 ORDER: Final = (
     Verdict.BLIND,
     Verdict.PARTIAL,
@@ -47,12 +58,29 @@ def counts(results: Sequence[Result]) -> dict[str, int]:
     return {str(verdict): found[verdict] for verdict in ORDER}
 
 
+def failing(results: Sequence[Result]) -> list[Proof]:
+    return [
+        result
+        for result in ordered(results)
+        if isinstance(result, Proof) and result.verdict in FAILING
+    ]
+
+
+def rules_by_line(results: Sequence[Result]) -> list[tuple[int | None, list[Proof]]]:
+    by_line: dict[int | None, list[Proof]] = {}
+    for proof in failing(results):
+        for line in proof.lines or (None,):
+            by_line.setdefault(line, []).append(proof)
+    return sorted(by_line.items(), key=lambda item: (item[0] is None, -len(item[1]), item[0] or 0))
+
+
 def _where(config_source: str, lines: Lines) -> str:
     places = ", ".join(f"{config_source}:{line}" for line in lines)
     return f" ({places})" if places else ""
 
 
-def text_lines(config_source: str, results: Sequence[Result]) -> Iterator[str]:
+def text_lines(analysis: Analysis) -> Iterator[str]:
+    results = analysis.results
     for result in ordered(results):
         title = _title(result)
         named = "" if title is None else f" {json.dumps(title)}"
@@ -60,7 +88,7 @@ def text_lines(config_source: str, results: Sequence[Result]) -> Iterator[str]:
             yield f"{SKIPPED} {result.source}{named}: {result.reason}"
             continue
         ids = ", ".join(map(str, result.rule.event_ids))
-        where = _where(config_source, result.lines)
+        where = _where(analysis.config_source, result.lines)
         yield (
             f"{result.verdict} {result.rule.source}{named} {result.rule.category} ({ids}): "
             f"{result.reason}{where}"
@@ -117,14 +145,12 @@ def _entry(result: Result) -> dict[str, object]:
     }
 
 
-def json_document(
-    version: str, config_source: str, config_sha256: str, results: Sequence[Result]
-) -> str:
+def json_document(analysis: Analysis) -> str:
     document = {
         "schema_version": SCHEMA_VERSION,
-        "tool": {"name": "sigma-blindspot", "version": version},
-        "config": {"source": config_source, "sha256": config_sha256},
-        "summary": counts(results),
-        "results": [_entry(result) for result in ordered(results)],
+        "tool": {"name": "sigma-blindspot", "version": analysis.version},
+        "config": {"source": analysis.config_source, "sha256": analysis.config_sha256},
+        "summary": counts(analysis.results),
+        "results": [_entry(result) for result in ordered(analysis.results)],
     }
     return json.dumps(document, indent=2, ensure_ascii=True)

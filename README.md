@@ -16,7 +16,7 @@ uv run sigma-blindspot doctor
 ## Usage
 
 ```console
-uv run sigma-blindspot analyze CONFIG RULES... [--format text|json] [--fail-on-blind] [--timeout-ms N] [--jobs N]
+uv run sigma-blindspot analyze CONFIG RULES... [--format text|json|markdown|sarif] [--navigator FILE] [--fail-on-blind] [--timeout-ms N] [--jobs N]
 uv run sigma-blindspot inspect CONFIG [--html FILE]
 uv run sigma-blindspot check-event CONFIG EVENTS [--html FILE]
 ```

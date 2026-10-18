@@ -12,9 +12,12 @@ from typing import Final
 
 from sigma_blindspot import doctor
 from sigma_blindspot.errors import SourceError
-from sigma_blindspot.prover.prove import DEFAULT_TIMEOUT_MS, Verdict
-from sigma_blindspot.report.analysis import Result, json_document, text_lines, verdict_of
+from sigma_blindspot.prover.prove import DEFAULT_TIMEOUT_MS
+from sigma_blindspot.report.analysis import Analysis, failing, json_document, text_lines
 from sigma_blindspot.report.html import Evaluated, EventsInput, render
+from sigma_blindspot.report.markdown import markdown_lines
+from sigma_blindspot.report.navigator import layer_document
+from sigma_blindspot.report.sarif import sarif_document
 from sigma_blindspot.runner import prove_all
 from sigma_blindspot.sigma.ir import LoadedRule, Skipped
 from sigma_blindspot.sigma.loader import load_rules
@@ -32,7 +35,14 @@ _CONTROL_ESCAPES: Final = MappingProxyType(
 _STATES: Final[Mapping[bool | None, str]] = MappingProxyType(
     {True: "LOGGED", False: "DROPPED", None: "UNKNOWN"}
 )
-_FAILING: Final[frozenset[str]] = frozenset({Verdict.BLIND, Verdict.PARTIAL})
+_FORMATS: Final[Mapping[str, Callable[[Analysis], Iterable[str]]]] = MappingProxyType(
+    {
+        "text": text_lines,
+        "json": lambda analysis: json_document(analysis).splitlines(),
+        "markdown": markdown_lines,
+        "sarif": lambda analysis: sarif_document(analysis).splitlines(),
+    }
+)
 
 
 def _version() -> str:
@@ -153,15 +163,14 @@ def _analyze(arguments: argparse.Namespace) -> int:
     loaded = load_rules(arguments.rules)
     rules = [item for item in loaded if isinstance(item, LoadedRule)]
     proofs = prove_all(config, data, rules, arguments.timeout_ms, arguments.jobs)
-    results: list[Result] = [*proofs, *(item for item in loaded if isinstance(item, Skipped))]
-    if arguments.format == "json":
-        lines = json_document(_version(), config.source, _sha256(data), results).splitlines()
-    else:
-        lines = list(text_lines(config.source, results))
-    for line in lines:
+    skipped = (item for item in loaded if isinstance(item, Skipped))
+    analysis = Analysis(_version(), config.source, _sha256(data), (*proofs, *skipped))
+    inputs = (arguments.config, *(Path(item.source) for item in loaded))
+    _write_report(arguments.navigator, inputs, lambda: layer_document(analysis))
+    for line in _FORMATS[arguments.format](analysis):
         _out(line)
-    failing = any(verdict_of(result) in _FAILING for result in results)
-    return EXIT_FAILURE if arguments.fail_on_blind and failing else EXIT_OK
+    blind = bool(failing(analysis.results))
+    return EXIT_FAILURE if arguments.fail_on_blind and blind else EXIT_OK
 
 
 _COMMANDS: Final[Mapping[str, Callable[[argparse.Namespace], int]]] = MappingProxyType(
@@ -198,7 +207,13 @@ def _parser() -> argparse.ArgumentParser:
     analyze.add_argument(
         "rules", type=Path, nargs="+", metavar="RULES", help="Sigma rule files or directories"
     )
-    analyze.add_argument("--format", choices=("text", "json"), default="text")
+    analyze.add_argument("--format", choices=tuple(_FORMATS), default="text")
+    analyze.add_argument(
+        "--navigator",
+        type=Path,
+        metavar="FILE",
+        help="also write an ATT&CK Navigator layer of the blind techniques to FILE",
+    )
     analyze.add_argument(
         "--fail-on-blind", action="store_true", help="exit with 1 if a rule is BLIND or PARTIAL"
     )
