@@ -48,8 +48,45 @@ modifiers applied. The YAML is never interpreted by hand.
 - Unsupported, each with its own reason: `cased`, `re`, `cidr`, `null`, `exists`, `lt`, `lte`, `gt`,
   `gte`, `fieldref`, boolean values, timestamp modifiers, `expand` placeholders and keyword
   searches.
-- A condition is split into top-level OR branches: the alternatives of the outermost `or`, of a
-  `1 of` and of a list of maps or values. Each branch is labelled with the selections it uses.
+- A condition is split into top-level OR branches: the alternatives of its outermost `or` or
+  `1 of`. A selection, with its lists of values or maps, stays in one branch. Each branch is
+  labelled with the selections it uses.
+
+## Verdicts
+
+The prover decides, for each rule and each Sysmon event ID of its category, whether an event can
+match the rule and still be logged by the configuration.
+
+| Verdict | Meaning |
+| --- | --- |
+| `OK` | An event can match the rule and be logged. The example event shown was found by Z3 and confirmed by the emulator (logged) and the Sigma evaluator (matches). |
+| `PARTIAL` | `OK`, but some top-level OR branches of the rule can never fire. They are listed with the configuration lines responsible. |
+| `BLIND` | No event can match the rule and be logged: Z3 proved it, or the event types are not logged at all. The configuration lines come from a minimized unsatisfiable core. |
+| `RULE_UNSAT` | The rule contradicts itself, whatever the configuration. |
+| `UNKNOWN` | Not decided, with the reason: unsupported Sigma construct, unverified Sysmon default, Z3 timeout, or a Z3 model that the emulator and the evaluator could not confirm. |
+| `SKIPPED` | The rule or file was not analysed (see "Sigma rules"). |
+
+Per event ID, `DISABLED` means the event type is not logged at all: not logged without a filter,
+or dropped entirely by the configuration. A rule is `BLIND` when every event ID is `BLIND`,
+`DISABLED` or `RULE_UNSAT`, and `OK` when at least one is `OK`.
+
+How the verdicts are computed:
+
+- The configuration is translated into the same condition representation as the rules, and every
+  Sysmon condition and Sigma value becomes a regular language on one field, with lower-cased
+  literals.
+- Z3 searches a Boolean skeleton of the rule and the configuration. For each field, the literals
+  that the Boolean model needs are checked as a single regular-language membership, and a
+  minimized conflict becomes a lemma. One membership per field keeps Z3 fast: several
+  memberships on the same string make it time out on real configurations.
+- Simple field checks are decided without Z3: a value fixed by `is`, a pattern included in an
+  excluded one (`end with .x.net` against an excluded `end with .net`), or a candidate value built
+  from the patterns and checked by the evaluator. Z3 decides the rest.
+- Values are searched among strings without `A`-`Z`. That set contains every lower-cased value,
+  so an unsatisfiable result is still a proof, and case folding never has to be encoded in Z3.
+- Each rule is proved in its own Z3 context, so a verdict, its lines and its example do not
+  depend on the other rules or on the order they are proved in.
+- Each check has a timeout, 2000 ms by default. A timeout gives `UNKNOWN`.
 
 ## Sysmon semantics implemented
 
@@ -82,6 +119,7 @@ lab probe. `tests/test_semantics.py` keeps this table in sync with
 | A condition on a field the event does not carry never matches | assumed |
 | Empty items in a `;` list are ignored | assumed |
 | Case-insensitivity follows the Unicode lower-case mapping | assumed |
+| Events carry every field that the config or a rule names for their type | assumed |
 
 ## Known limitations
 
@@ -91,4 +129,9 @@ lab probe. `tests/test_semantics.py` keeps this table in sync with
   P1 settles it.
 - Field names are not checked against the Sysmon schema: a misspelled field is accepted and its
   conditions never match.
+- The prover assumes that events carry every field the configuration or the rule names for their
+  type (see the table). A rule or a configuration naming a field that Sysmon never emits for that
+  type can make a verdict wrong.
+- Z3 represents characters up to U+2FFFF. A rule or a configuration with a value beyond it gives
+  `UNKNOWN`.
 - UTF-16 files need a byte order mark.

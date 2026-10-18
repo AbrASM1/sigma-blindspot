@@ -152,7 +152,7 @@ def _identifiers(item: object) -> Iterator[str]:
 
 
 def _top_level(item: object) -> Iterator[object]:
-    if isinstance(item, ConditionOR):
+    if isinstance(item, ConditionOR) and isinstance(item.parent, ConditionOR | None):
         for arg in item.args:
             yield from _top_level(arg)
     else:

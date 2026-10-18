@@ -9,7 +9,9 @@ from sigma_blindspot.sigma.ir import (
     Contains,
     Equals,
     Glob,
+    LessThan,
     Match,
+    MoreThan,
     Node,
     Not,
     Or,
@@ -49,6 +51,10 @@ def pattern_matches(pattern: Pattern, value: str) -> bool:
             return text in value
         case Glob(parts=parts):
             return glob_regex(parts).fullmatch(value) is not None
+        case LessThan(value=text):
+            return value < text
+        case MoreThan(value=text):
+            return value > text
 
 
 def _all(outcomes: Iterable[bool | None]) -> bool | None:

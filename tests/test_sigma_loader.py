@@ -150,30 +150,28 @@ def test_fields_of_a_map_combine_with_and() -> None:
     )
 
 
-def test_a_value_list_at_the_top_is_split_into_branches() -> None:
+def test_lists_inside_a_selection_stay_in_one_branch() -> None:
     detection = """\
-        sel:
+        sel_values:
           Image|endswith:
             - '\\a.exe'
             - '\\b.exe'
-        condition: sel
-        """
-    assert branches(detection) == (Match(IMAGE, Suffix("\\a.exe")), Match(IMAGE, Suffix("\\b.exe")))
-
-
-def test_a_list_of_maps_is_an_or_split_into_branches() -> None:
-    detection = """\
-        sel:
-          - Image|endswith: '\\a.exe'
+        sel_maps:
+          - Image|endswith: '\\c.exe'
             User: x
           - CommandLine|contains: y
-        condition: sel
+        condition: 1 of sel_*
         """
     rule = loaded_rule(rule_text(detection))
-    assert [branch.label for branch in rule.branches] == ["#1 sel", "#2 sel"]
+    assert [branch.label for branch in rule.branches] == ["#1 sel_values", "#2 sel_maps"]
     assert tuple(branch.condition for branch in rule.branches) == (
-        And((Match(IMAGE, Suffix("\\a.exe")), Match(USER, Equals("x")))),
-        Match(COMMAND_LINE, Contains("y")),
+        Or((Match(IMAGE, Suffix("\\a.exe")), Match(IMAGE, Suffix("\\b.exe")))),
+        Or(
+            (
+                And((Match(IMAGE, Suffix("\\c.exe")), Match(USER, Equals("x")))),
+                Match(COMMAND_LINE, Contains("y")),
+            )
+        ),
     )
 
 

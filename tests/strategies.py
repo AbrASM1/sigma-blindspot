@@ -11,7 +11,9 @@ from sigma_blindspot.sigma.ir import (
     Contains,
     Equals,
     Glob,
+    LessThan,
     Match,
+    MoreThan,
     Node,
     Not,
     Or,
@@ -85,6 +87,8 @@ patterns: st.SearchStrategy[Pattern] = st.one_of(
     st.builds(Suffix, literals),
     st.builds(Contains, literals),
     st.builds(Glob, glob_parts),
+    st.builds(LessThan, literals),
+    st.builds(MoreThan, literals),
 )
 sigma_matches = st.builds(Match, field=st.sampled_from(FIELDS), pattern=patterns)
 
