@@ -61,7 +61,7 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - Tests locate config lines with `conftest.line_of()`, never with hard-coded line numbers.
 - Small commits, imperative mood, prefixed `feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`.
 
-## Current state (step 0)
+## Current state (milestone B)
 
 - `src/sigma_blindspot/sysmon/`: `parser.py` (stdlib expat, keeps line numbers, rejects DOCTYPE,
   reads UTF-8 and UTF-16, condition names ignore ASCII case), `model.py` (Event, Condition, Rule,
@@ -78,7 +78,12 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
   `EventError`, both `(message, line, source)`.
 - `src/sigma_blindspot/report/html.py`: pure `render()` of the HTML report (stdlib only, no
   JavaScript, CSP pinned to the embedded stylesheet hash, every input string escaped).
-- `tests/`: unit, CLI, property-based and fuzz tests, 211 passing; `test_sources.py` rejects
+- `src/sigma_blindspot/sigma/`: `ir.py` (LoadedRule with top-level OR branches; And, Or, Not,
+  Match, Unsupported; Equals, Prefix, Suffix, Contains, Glob with folded literals), `loader.py`
+  (the only module importing pySigma: files and directories, scope check, SKIPPED entries,
+  conversion of the parsed tree), `evaluate.py` (three-valued reference evaluator, the oracle of
+  the Z3 rule encoding).
+- `tests/`: unit, CLI, property-based and fuzz tests, 292 passing; `test_sources.py` rejects
   hidden characters in tracked files. CI runs on Windows and Linux.
 
 ## Sysmon semantics
@@ -106,7 +111,7 @@ text output of `inspect` and `check-event`, and `decoding.py` are frozen until E
 
 - [x] v0.1: Sysmon parser, reference emulator, property tests, CI.
 - [x] 0. Condition names ignore ASCII case; three-state default for event types without filter.
-- [ ] B. Sigma loading in `sigma/`: `loader.py` (files and directories, a broken or out-of-scope
+- [x] B. Sigma loading in `sigma/`: `loader.py` (files and directories, a broken or out-of-scope
   file is SKIPPED with a reason, never an abort), `ir.py` (And, Or, Not, Match, Unsupported;
   Equals, Prefix, Suffix, Contains, Glob with folded literals), `evaluate.py` (reference
   evaluator). Built from pySigma's parsed tree, never from YAML.

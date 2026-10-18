@@ -6,6 +6,21 @@ from xml.sax.saxutils import escape, quoteattr
 
 from hypothesis import strategies as st
 
+from sigma_blindspot.sigma.ir import (
+    And,
+    Contains,
+    Equals,
+    Glob,
+    Match,
+    Node,
+    Not,
+    Or,
+    Pattern,
+    Prefix,
+    Suffix,
+    Unsupported,
+    Wildcard,
+)
 from sigma_blindspot.sysmon.conditions import Operator
 from sigma_blindspot.sysmon.events import EventTag
 from sigma_blindspot.sysmon.model import (
@@ -61,6 +76,29 @@ filterable_events = st.builds(
     event_id=st.sampled_from((1, 3, 12, 13)),
     fields=st.dictionaries(st.sampled_from(FIELDS), texts, min_size=1),
 )
+
+literals = st.text(alphabet="ab\\;", max_size=3)
+glob_parts = st.lists(literals.filter(bool) | st.sampled_from(Wildcard), max_size=4).map(tuple)
+patterns: st.SearchStrategy[Pattern] = st.one_of(
+    st.builds(Equals, literals),
+    st.builds(Prefix, literals),
+    st.builds(Suffix, literals),
+    st.builds(Contains, literals),
+    st.builds(Glob, glob_parts),
+)
+sigma_matches = st.builds(Match, field=st.sampled_from(FIELDS), pattern=patterns)
+
+
+def _trees(leaves: st.SearchStrategy[Node]) -> st.SearchStrategy[Node]:
+    def inner(children: st.SearchStrategy[Node]) -> st.SearchStrategy[Node]:
+        groups = st.lists(children, max_size=3).map(tuple)
+        return st.one_of(st.builds(Not, children), st.builds(And, groups), st.builds(Or, groups))
+
+    return st.recursive(leaves, inner, max_leaves=6)
+
+
+supported_nodes = _trees(sigma_matches)
+sigma_nodes = _trees(sigma_matches | st.just(Unsupported("unsupported")))
 
 xml_texts = st.text(
     st.characters(exclude_categories=("Cs", "Cc", "Cn")) | st.sampled_from("\t\n\r"), max_size=12
