@@ -48,6 +48,9 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
    simulation). Write it, lint it (PSScriptAnalyzer if available), and the maintainer runs it on
    the isolated VM. Never commit exported events: `lab/out/` is gitignored because events contain
    hostnames and usernames.
+9. Tests never use the network. External data (SigmaHQ, public Sysmon configs) is fetched by
+   scripts at pinned commits into the gitignored `.cache/`. Never commit SigmaHQ rules, SigmaHQ
+   regression data or third-party Sysmon configs; tests use hand-written `tests/fixtures/`.
 
 ## Code conventions
 
@@ -58,22 +61,25 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - Tests locate config lines with `conftest.line_of()`, never with hard-coded line numbers.
 - Small commits, imperative mood, prefixed `feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`.
 
-## Current state (v0.1)
+## Current state (step 0)
 
 - `src/sigma_blindspot/sysmon/`: `parser.py` (stdlib expat, keeps line numbers, rejects DOCTYPE,
-  reads UTF-8 and UTF-16), `model.py` (Event, Condition, Rule, EventFilter, Decision,
-  SysmonConfig = the reference emulator), `conditions.py` (the 16 documented operators),
-  `events.py` (tags, event IDs, Sigma category mapping, unverified defaults), `semantics.py`
+  reads UTF-8 and UTF-16, condition names ignore ASCII case), `model.py` (Event, Condition, Rule,
+  EventFilter, Decision with `logged: bool | None`, SysmonConfig = the reference emulator),
+  `conditions.py` (the 16 documented operators), `events.py` (tags, event IDs, Sigma category
+  mapping, `default_without_filter`: `LOGGED`, `NOT_LOGGED` or `UNKNOWN`), `semantics.py`
   (registry of documented and assumed semantics; `@assumes(...)` marks the code relying on an
   assumption, and a test keeps the table in `docs/reference.md` in sync), `jsonl.py` (reads
   exported events).
 - `src/sigma_blindspot/decoding.py`: strict UTF-8 / UTF-16 (byte order mark) decoding shared by
   the config parser and the event reader; expat only ever sees decoded text.
 - `src/sigma_blindspot/cli.py`: argparse with `doctor` (checks in `doctor.py`), `inspect`,
-  `check-event`. `errors.py`: `ConfigError` and `EventError`, both `(message, line, source)`.
+  `check-event` (`LOGGED`, `DROPPED` or `UNKNOWN` per event). `errors.py`: `ConfigError` and
+  `EventError`, both `(message, line, source)`.
 - `src/sigma_blindspot/report/html.py`: pure `render()` of the HTML report (stdlib only, no
   JavaScript, CSP pinned to the embedded stylesheet hash, every input string escaped).
-- `tests/`: unit, CLI, property-based and fuzz tests, 233 passing. CI runs on Windows and Linux.
+- `tests/`: unit, CLI, property-based and fuzz tests, 211 passing; `test_sources.py` rejects
+  hidden characters in tracked files. CI runs on Windows and Linux.
 
 ## Sysmon semantics
 
@@ -81,42 +87,45 @@ Documented and implemented: `include` logs only matches, `exclude` logs everythi
 exclude always wins; an empty include logs nothing, an empty exclude logs everything; RuleGroup
 `groupRelation` sets AND/OR between a filter's items; without RuleGroup, same field is OR and
 different fields are AND; every condition is case-insensitive; `;` separates multi-values; the
-default condition is `is`; `image` matches a full path or the bare image name.
+default condition is `is`; `image` matches a full path or the bare image name; without a filter,
+NetworkConnect (3) and ImageLoad (7) are not logged. The default of every other event type
+without a filter is `UNKNOWN` until probe P1.
 
-Assumed, to verify with lab probes: what is logged for event types absent from the config
-(everything except 3 and 7); `less than` / `more than` numeric or lexical; leading or trailing
-whitespace in values compared literally; several filters with the same tag and onmatch combined
-with OR; `<Rule>` inside a legacy filter combined with AND; `<Rule>` combining its conditions
-with its own `groupRelation`; a condition on a field the event lacks never matching; empty
-items of a `;` list ignored; case-insensitivity following the Unicode lower-case mapping.
+Assumed, to verify with lab probes: condition names ignoring ASCII case; `less than` / `more than`
+lexical; leading or trailing whitespace in values compared literally; several filters with the
+same tag and onmatch combined with OR; `<Rule>` inside a legacy filter combined with AND; `<Rule>`
+combining its conditions with its own `groupRelation`; a condition on a field the event lacks
+never matching; empty items of a `;` list ignored; case-insensitivity following the Unicode
+lower-case mapping.
 
 ## Roadmap, in order
 
+One milestone at a time: post a plan, wait for the OK, run the full CI sequence (`ruff check`,
+`ruff format --check`, `mypy`, `pytest`, `doctor`), give the summary, commit. `report/html.py`, the
+text output of `inspect` and `check-event`, and `decoding.py` are frozen until E (bug fixes only).
+
 - [x] v0.1: Sysmon parser, reference emulator, property tests, CI.
-- [ ] A. Lab kit in `lab/`, compatible with Windows PowerShell 5.1 and PowerShell 7.
-  - `Export-SysmonEvents.ps1`: reads `Microsoft-Windows-Sysmon/Operational` with `Get-WinEvent`,
-    flattens each event's `ToXml()` EventData into `{EventID, <field>: <value>}`, writes JSON
-    Lines that `check-event` reads as-is.
-  - `Invoke-Probe.ps1 -Probe <name>` using `lab/probes/<name>/` (`config.xml`, `trigger.ps1`,
-    `event.json` = the event the trigger should produce, `README.md` = the question tested).
-    Steps: emulator prediction on `event.json`; apply the config with `sysmon -c` (admin); run
-    the trigger with a unique marker in the command line or file name; search the log for the
-    marker; print PREDICTED vs OBSERVED; always restore the baseline config (try/finally).
-  - One probe per assumption listed above. Each probe result updates the table in
-    `docs/reference.md`.
-  - Differential run: the same actions under a log-everything config and under a target
-    config; the emulator must predict exactly which events disappear.
-- [ ] B. Sigma loading in `src/sigma_blindspot/sigma/`: Windows rules whose category is in
-  `SIGMA_CATEGORY_TO_EVENT_IDS`. Correlations, complex regex, `cidr`, `fieldref`, numeric
-  comparisons and `cased` give UNKNOWN with a reason until supported.
-- [ ] C. Z3 prover in `src/sigma_blindspot/prover/`: one Z3 String per field, lower-cased
-  literals, native PrefixOf / SuffixOf / Contains / equality, regex only for inner wildcards.
-  Each Sysmon event ID becomes a `logged(event)` formula with `assert_and_track` labels set to
-  config lines; push/pop per rule; timeout per query. Verdicts: BLIND, OK (with an example
-  event), DISABLED, UNKNOWN, computed per OR branch; the unsat core gives the responsible lines.
-- [ ] D. Validation on SigmaHQ `regression_data` (a JSON export sits next to each .evtx): every
-  real event of a rule proven BLIND must be dropped by the emulator.
-- [ ] E. Reports: Markdown, JSON, SARIF 2.1.0, ATT&CK Navigator layer 4.5; `--fail-on-blind`;
-  process pool; cache keyed by config hash.
-- [ ] F. Benchmark popular Sysmon configs against SigmaHQ. Publish only reproducible numbers,
-  with method and limits. Include-only configs are deliberate noise trade-offs, not bugs.
+- [x] 0. Condition names ignore ASCII case; three-state default for event types without filter.
+- [ ] B. Sigma loading in `sigma/`: `loader.py` (files and directories, a broken or out-of-scope
+  file is SKIPPED with a reason, never an abort), `ir.py` (And, Or, Not, Match, Unsupported;
+  Equals, Prefix, Suffix, Contains, Glob with folded literals), `evaluate.py` (reference
+  evaluator). Built from pySigma's parsed tree, never from YAML.
+- [ ] C. Z3 prover in `prover/`: `lit()` / `read()` around `StringVal` escapes; lower-cased
+  literals and no case folding in Z3; SAT is confirmed by the emulator and the evaluator (one
+  retry banning A-Z), else UNKNOWN. `encode_config` mirrors the emulator with tracked assertions
+  labelled by config lines and minimized cores. Verdicts per event ID: RULE_UNSAT, OK, DISABLED,
+  BLIND, UNKNOWN; PARTIAL per top-level OR branch. One solver per (config, event ID), push/pop
+  per rule, 2000 ms timeout by default.
+- [ ] C2. `analyze CONFIG RULES... [--format text|json] [--fail-on-blind] [--timeout-ms N]
+  [--jobs N]`: exit 0, 1 (BLIND or PARTIAL with `--fail-on-blind`), 2 (invalid config).
+- [ ] A. Lab kit in `lab/` (PowerShell 5.1 and 7): `Export-SysmonEvents.ps1`, `Invoke-Probe.ps1`,
+  probes P1 (defaults) to P7; raw results in `lab/results/<probe>.md`.
+- [ ] D. SigmaHQ regression validation: `scripts/fetch_sigmahq.py` at a pinned commit; the
+  evaluator, the rule encoding and the prover checked against the JSON samples; manual workflow.
+- [ ] E. Reports: `--format markdown`, `--format sarif` (2.1.0), `--navigator FILE`.
+- [ ] F. Benchmark `bench/run.py`, only after D passes and P1 is resolved; the maintainer approves
+  the numbers before `bench/results.md` is committed.
+- Out of scope: regex, CIDR and null support; a field check against the Sysmon schema; PyPI.
+- Done: BLIND verdicts with lines on SwiftOnSecurity and SigmaHQ, every OK confirmed,
+  differential properties pass the intensive profile, D passes or every mismatch is explained,
+  P1 resolved, README with real output, tag `v0.2.0`.
