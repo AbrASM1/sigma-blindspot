@@ -21,8 +21,9 @@ from sigma_blindspot.sysmon.conditions import Operator
 from sigma_blindspot.sysmon.events import (
     TAG_BY_EVENT_ID,
     UNFILTERABLE_EVENT_IDS,
+    Default,
     EventTag,
-    logged_without_filter,
+    default_without_filter,
 )
 from sigma_blindspot.sysmon.model import (
     Condition,
@@ -114,7 +115,9 @@ ABSENT_FIELDS = """\
 </Sysmon>
 """
 
-type Case = tuple[str, int, dict[str, str], bool, Reason, tuple[str, ...]]
+type Case = tuple[str, int, dict[str, str], bool | None, Reason, tuple[str, ...]]
+
+DOCUMENTED_DEFAULTS = {Default.LOGGED: True, Default.NOT_LOGGED: False, Default.UNKNOWN: None}
 
 CASES: list[Case] = [
     (
@@ -151,8 +154,8 @@ CASES: list[Case] = [
         Reason.NOT_INCLUDED,
         ('<NetworkConnect onmatch="include"',),
     ),
-    (DOC_SAMPLE, 1, {"Image": "C:\\x.exe"}, True, Reason.DEFAULT, ()),
-    (DOC_SAMPLE, 7, {"ImageLoaded": "C:\\x.dll"}, False, Reason.DEFAULT, ()),
+    (DOC_SAMPLE, 1, {"Image": "C:\\x.exe"}, None, Reason.UNVERIFIED_DEFAULT, ()),
+    (DOC_SAMPLE, 7, {"ImageLoaded": "C:\\x.dll"}, False, Reason.NOT_LOGGED_BY_DEFAULT, ()),
     (DOC_SAMPLE, 4, {}, True, Reason.UNFILTERABLE, ()),
     (
         DOC_RULE_GROUPS,
@@ -174,7 +177,7 @@ CASES: list[Case] = [
     (DOC_RULE_GROUPS, 5, {"Image": "TIMEOUT.EXE"}, True, Reason.INCLUDED, ('"terminate"',)),
     (DOC_RULE_GROUPS, 5, {"Image": "notepad.exe"}, False, Reason.NOT_INCLUDED, ("<ProcessT",)),
     (DOC_RULE_GROUPS, 7, {"ImageLoaded": "a.dll"}, False, Reason.NOT_INCLUDED, ("<ImageLoad",)),
-    (DOC_RULE_GROUPS, 11, {"TargetFilename": "a"}, True, Reason.DEFAULT, ()),
+    (DOC_RULE_GROUPS, 11, {"TargetFilename": "a"}, None, Reason.UNVERIFIED_DEFAULT, ()),
     (
         LEGACY,
         1,
@@ -279,7 +282,7 @@ def test_emulates_sysmon_filtering(
     text: str,
     event_id: int,
     fields: dict[str, str],
-    logged: bool,
+    logged: bool | None,
     reason: Reason,
     needles: tuple[str, ...],
 ) -> None:
@@ -332,7 +335,7 @@ def filter_holds(event_filter: EventFilter, event: Event) -> bool:
     return bool(items) and fields_hold and rules_hold
 
 
-def reference_logged(config: SysmonConfig, event: Event) -> bool:
+def reference_logged(config: SysmonConfig, event: Event) -> bool | None:
     tag = TAG_BY_EVENT_ID.get(event.event_id)
     if tag is None:
         return True
@@ -340,7 +343,7 @@ def reference_logged(config: SysmonConfig, event: Event) -> bool:
     includes = [item for item in filters if item.onmatch is OnMatch.INCLUDE]
     excludes = [item for item in filters if item.onmatch is OnMatch.EXCLUDE]
     if not filters:
-        return logged_without_filter(tag)
+        return DOCUMENTED_DEFAULTS[default_without_filter(tag)]
     if any(filter_holds(item, event) for item in excludes):
         return False
     return not includes or any(filter_holds(item, event) for item in includes)
@@ -430,8 +433,16 @@ def test_unfilterable_events_are_always_logged(config: SysmonConfig, event_id: i
     assert config.evaluate(Event(event_id, {})) == Decision(True, Reason.UNFILTERABLE)
 
 
-@pytest.mark.parametrize("event_id", sorted(TAG_BY_EVENT_ID))
-def test_event_types_without_filter_follow_the_assumed_default(event_id: int) -> None:
+@given(
+    config=configs,
+    event_id=st.sampled_from(sorted(TAG_BY_EVENT_ID)),
+    fields=st.dictionaries(st.text(max_size=8), st.text(max_size=8), max_size=3),
+)
+def test_event_types_without_filter_follow_their_default(
+    config: SysmonConfig, event_id: int, fields: dict[str, str]
+) -> None:
     tag = TAG_BY_EVENT_ID[event_id]
-    decision = config_of().evaluate(Event(event_id, {}))
-    assert decision == Decision(logged_without_filter(tag), Reason.DEFAULT)
+    unfiltered = config_of(*(item for item in config.filters if item.tag is not tag))
+    decision = unfiltered.evaluate(Event(event_id, fields))
+    assert decision.logged is DOCUMENTED_DEFAULTS[default_without_filter(tag)]
+    assert decision.lines == () and decision.reason.startswith("no filter for this event type")

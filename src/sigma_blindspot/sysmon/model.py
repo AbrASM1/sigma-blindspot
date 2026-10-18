@@ -3,13 +3,15 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from itertools import chain
 from types import MappingProxyType
+from typing import Final
 
 from sigma_blindspot.sysmon.conditions import Operator
 from sigma_blindspot.sysmon.events import (
     EVENT_IDS,
     TAG_BY_EVENT_ID,
+    Default,
     EventTag,
-    logged_without_filter,
+    default_without_filter,
 )
 from sigma_blindspot.sysmon.semantics import Semantic, assumes
 
@@ -28,7 +30,9 @@ class Relation(StrEnum):
 
 class Reason(StrEnum):
     UNFILTERABLE = "cannot be filtered"
-    DEFAULT = "no filter for this event type, assumed default"
+    LOGGED_BY_DEFAULT = "no filter for this event type, logged by default"
+    NOT_LOGGED_BY_DEFAULT = "no filter for this event type, not logged by default"
+    UNVERIFIED_DEFAULT = "no filter for this event type, Sysmon default unverified"
     INCLUDED = "matched an include filter"
     EXCLUDED = "matched an exclude filter"
     NOT_INCLUDED = "matched no include filter"
@@ -114,9 +118,18 @@ class EventFilter:
 
 @dataclass(frozen=True, slots=True)
 class Decision:
-    logged: bool
+    logged: bool | None
     reason: Reason
     lines: Lines = ()
+
+
+_DEFAULT_DECISIONS: Final[Mapping[Default, Decision]] = MappingProxyType(
+    {
+        Default.LOGGED: Decision(True, Reason.LOGGED_BY_DEFAULT),
+        Default.NOT_LOGGED: Decision(False, Reason.NOT_LOGGED_BY_DEFAULT),
+        Default.UNKNOWN: Decision(None, Reason.UNVERIFIED_DEFAULT),
+    }
+)
 
 
 @assumes(Semantic.SEVERAL_FILTERS)
@@ -160,5 +173,5 @@ class SysmonConfig:
             return Decision(True, Reason.UNFILTERABLE)
         filters = self.filters_for(tag)
         if not filters:
-            return Decision(logged_without_filter(tag), Reason.DEFAULT)
+            return _DEFAULT_DECISIONS[default_without_filter(tag)]
         return _decide(filters, event)

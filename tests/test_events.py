@@ -4,8 +4,9 @@ from sigma_blindspot.sysmon.events import (
     SIGMA_CATEGORY_TO_EVENT_IDS,
     TAG_BY_EVENT_ID,
     UNFILTERABLE_EVENT_IDS,
+    Default,
     EventTag,
-    logged_without_filter,
+    default_without_filter,
 )
 
 
@@ -37,6 +38,8 @@ def test_sigma_categories_map_to_known_event_ids() -> None:
     assert SIGMA_CATEGORY_TO_EVENT_IDS["registry_event"] == (12, 13, 14)
 
 
-def test_only_network_connect_and_image_load_are_off_without_filter() -> None:
-    disabled = {tag for tag in EventTag if not logged_without_filter(tag)}
-    assert disabled == {EventTag.NETWORK_CONNECT, EventTag.IMAGE_LOAD}
+def test_only_network_connect_and_image_load_have_a_documented_default() -> None:
+    defaults = {tag: default_without_filter(tag) for tag in EventTag}
+    not_logged = {tag for tag, default in defaults.items() if default is Default.NOT_LOGGED}
+    assert not_logged == {EventTag.NETWORK_CONNECT, EventTag.IMAGE_LOAD}
+    assert all(defaults[tag] is Default.UNKNOWN for tag in EventTag if tag not in not_logged)

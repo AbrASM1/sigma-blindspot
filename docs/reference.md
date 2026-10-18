@@ -19,7 +19,7 @@
 
 `--html FILE` on `inspect` or `check-event` also writes a report: summary counts, one row per
 event with its verdict and links to the configuration lines responsible, the parsed
-configuration, the event types left to the assumed default, and the assumptions the results
+configuration, the default of each event type without a filter, and the assumptions the results
 depend on.
 
 - One self-contained file: no JavaScript, no external resource, and a Content Security Policy
@@ -51,7 +51,7 @@ lab probe. `tests/test_semantics.py` keeps this table in sync with
 | `;` separates the values of the `any` and `all` conditions | documented |
 | `image` matches the full path or the bare image name | documented |
 | Event IDs 4, 16 and 255 cannot be filtered | documented |
-| Event types absent from the config are logged, except 3 and 7 | assumed |
+| Without a filter, NetworkConnect (3) and ImageLoad (7) are not logged | documented |
 | `less than` and `more than` compare lower-cased values lexically | assumed |
 | Leading and trailing whitespace in values is compared literally | assumed |
 | Several filters with the same tag and `onmatch` combine with OR | assumed |
@@ -63,9 +63,10 @@ lab probe. `tests/test_semantics.py` keeps this table in sync with
 
 ## Known limitations
 
-- What Sysmon logs for an event type that the configuration does not mention is an unverified
-  assumption (see the table). `inspect` and `check-event` label those decisions
-  `assumed default`.
+- What Sysmon logs for an event type that the configuration does not mention is documented only
+  for NetworkConnect (3) and ImageLoad (7), which are disabled by default. For every other event
+  type, `check-event` prints `UNKNOWN` and `inspect` prints `default: unknown` until lab probe
+  P1 settles it.
 - Field names are not checked against the Sysmon schema: a misspelled field is accepted and its
   conditions never match.
 - Condition names must be spelled exactly as documented: `condition="Contains"` is rejected.
