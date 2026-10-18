@@ -21,6 +21,7 @@ class Analysis:
 
 SCHEMA_VERSION: Final = 1
 SKIPPED: Final = "SKIPPED"
+FAILING: Final = frozenset({Verdict.BLIND, Verdict.PARTIAL})
 ORDER: Final = (
     Verdict.BLIND,
     Verdict.PARTIAL,
@@ -55,6 +56,22 @@ def ordered(results: Sequence[Result]) -> list[Result]:
 def counts(results: Sequence[Result]) -> dict[str, int]:
     found = Counter(map(verdict_of, results))
     return {str(verdict): found[verdict] for verdict in ORDER}
+
+
+def failing(results: Sequence[Result]) -> list[Proof]:
+    return [
+        result
+        for result in ordered(results)
+        if isinstance(result, Proof) and result.verdict in FAILING
+    ]
+
+
+def rules_by_line(results: Sequence[Result]) -> list[tuple[int | None, list[Proof]]]:
+    by_line: dict[int | None, list[Proof]] = {}
+    for proof in failing(results):
+        for line in proof.lines or (None,):
+            by_line.setdefault(line, []).append(proof)
+    return sorted(by_line.items(), key=lambda item: (item[0] is None, -len(item[1]), item[0] or 0))
 
 
 def _where(config_source: str, lines: Lines) -> str:

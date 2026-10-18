@@ -12,8 +12,8 @@ from typing import Final
 
 from sigma_blindspot import doctor
 from sigma_blindspot.errors import SourceError
-from sigma_blindspot.prover.prove import DEFAULT_TIMEOUT_MS, Verdict
-from sigma_blindspot.report.analysis import Analysis, json_document, text_lines, verdict_of
+from sigma_blindspot.prover.prove import DEFAULT_TIMEOUT_MS
+from sigma_blindspot.report.analysis import Analysis, failing, json_document, text_lines
 from sigma_blindspot.report.html import Evaluated, EventsInput, render
 from sigma_blindspot.report.markdown import markdown_lines
 from sigma_blindspot.report.navigator import layer_document
@@ -35,7 +35,6 @@ _CONTROL_ESCAPES: Final = MappingProxyType(
 _STATES: Final[Mapping[bool | None, str]] = MappingProxyType(
     {True: "LOGGED", False: "DROPPED", None: "UNKNOWN"}
 )
-_FAILING: Final[frozenset[str]] = frozenset({Verdict.BLIND, Verdict.PARTIAL})
 _FORMATS: Final[Mapping[str, Callable[[Analysis], Iterable[str]]]] = MappingProxyType(
     {
         "text": text_lines,
@@ -170,8 +169,8 @@ def _analyze(arguments: argparse.Namespace) -> int:
     _write_report(arguments.navigator, inputs, lambda: layer_document(analysis))
     for line in _FORMATS[arguments.format](analysis):
         _out(line)
-    failing = any(verdict_of(result) in _FAILING for result in analysis.results)
-    return EXIT_FAILURE if arguments.fail_on_blind and failing else EXIT_OK
+    blind = bool(failing(analysis.results))
+    return EXIT_FAILURE if arguments.fail_on_blind and blind else EXIT_OK
 
 
 _COMMANDS: Final[Mapping[str, Callable[[argparse.Namespace], int]]] = MappingProxyType(

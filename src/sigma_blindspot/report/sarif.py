@@ -4,7 +4,7 @@ from typing import Final
 from urllib.parse import quote
 
 from sigma_blindspot.prover.prove import Proof, Verdict
-from sigma_blindspot.report.analysis import Analysis, ordered
+from sigma_blindspot.report.analysis import Analysis, failing
 from sigma_blindspot.sysmon.model import Lines
 
 SARIF_VERSION: Final = "2.1.0"
@@ -78,17 +78,12 @@ def _result(proof: Proof, config_uri: str) -> dict[str, object]:
 
 def sarif_document(analysis: Analysis) -> str:
     config_uri = artifact_uri(analysis.config_source)
-    failing = [
-        result
-        for result in ordered(analysis.results)
-        if isinstance(result, Proof) and result.verdict in _RULE_INDEX
-    ]
     driver = {"name": "sigma-blindspot", "version": analysis.version, "rules": _RULES}
     artifact = {"location": {"uri": config_uri}, "hashes": {"sha-256": analysis.config_sha256}}
     run = {
         "tool": {"driver": driver},
         "artifacts": [artifact],
-        "results": [_result(proof, config_uri) for proof in failing],
+        "results": [_result(proof, config_uri) for proof in failing(analysis.results)],
     }
     document = {"$schema": SCHEMA, "version": SARIF_VERSION, "runs": [run]}
     return json.dumps(document, indent=2, ensure_ascii=True)
