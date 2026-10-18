@@ -3,8 +3,6 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import Final
 
-from sigma_blindspot.sysmon.semantics import Semantic, assumes
-
 
 class EventTag(StrEnum):
     PROCESS_CREATE = "ProcessCreate"
@@ -99,9 +97,15 @@ SIGMA_CATEGORY_TO_EVENT_IDS: Final[Mapping[str, tuple[int, ...]]] = MappingProxy
     }
 )
 
-_DISABLED_WITHOUT_FILTER: Final = frozenset({EventTag.NETWORK_CONNECT, EventTag.IMAGE_LOAD})
+
+class Default(StrEnum):
+    LOGGED = "logged"
+    NOT_LOGGED = "not logged"
+    UNKNOWN = "unknown"
 
 
-@assumes(Semantic.UNLISTED_EVENT_TYPES)
-def logged_without_filter(tag: EventTag) -> bool:
-    return tag not in _DISABLED_WITHOUT_FILTER
+_NOT_LOGGED_WITHOUT_FILTER: Final = frozenset({EventTag.NETWORK_CONNECT, EventTag.IMAGE_LOAD})
+
+
+def default_without_filter(tag: EventTag) -> Default:
+    return Default.NOT_LOGGED if tag in _NOT_LOGGED_WITHOUT_FILTER else Default.UNKNOWN

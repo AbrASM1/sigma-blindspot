@@ -119,13 +119,13 @@ def test_summary_cards_count_events_and_configuration() -> None:
     )
     assert cards == [
         ("", "4", "events"),
-        ("ok", "2", "logged"),
+        ("ok", "1", "logged"),
         ("bad", "2", "dropped"),
-        ("warn", "1", "decided by assumed default"),
+        ("warn", "1", "unknown"),
         ("", "4", "filters"),
         ("", "5", "conditions"),
         ("", f"3 / {len(EventTag)}", "event types filtered"),
-        ("warn", str(len(EventTag) - 3), "event types on assumed default"),
+        ("warn", str(len(EventTag) - 4), "event types with unverified default"),
     ]
 
 

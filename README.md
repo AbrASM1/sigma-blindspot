@@ -51,8 +51,8 @@ $ uv run sigma-blindspot check-event sysmon.xml events.jsonl
 events.jsonl:1: EventID 1 DROPPED matched an exclude filter (sysmon.xml:5)
 events.jsonl:2: EventID 1 LOGGED matched no exclude filter
 events.jsonl:3: EventID 3 DROPPED matched no include filter (sysmon.xml:8)
-events.jsonl:4: EventID 22 LOGGED no filter for this event type, assumed default
-4 events: 2 logged, 2 dropped
+events.jsonl:4: EventID 22 UNKNOWN no filter for this event type, Sysmon default unverified
+4 events: 1 logged, 2 dropped, 1 unknown
 ```
 
 Exit codes: `0` success, `1` failed `doctor` check or output closed early, `2` invalid input. Encodings, implemented Sysmon semantics and known limitations: `docs/reference.md`.

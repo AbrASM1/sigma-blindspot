@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import sys
+from collections import Counter
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from importlib import metadata
 from pathlib import Path
@@ -12,7 +13,7 @@ from typing import Final
 from sigma_blindspot import doctor
 from sigma_blindspot.errors import SourceError
 from sigma_blindspot.report.html import Evaluated, EventsInput, render
-from sigma_blindspot.sysmon.events import EVENT_IDS_BY_TAG, EventTag, logged_without_filter
+from sigma_blindspot.sysmon.events import EVENT_IDS_BY_TAG, EventTag, default_without_filter
 from sigma_blindspot.sysmon.jsonl import parse_events
 from sigma_blindspot.sysmon.model import Condition, Decision, EventFilter, Rule
 from sigma_blindspot.sysmon.parser import parse_config
@@ -22,6 +23,9 @@ EXIT_FAILURE: Final = 1
 EXIT_ERROR: Final = 2
 _CONTROL_ESCAPES: Final = MappingProxyType(
     {code: f"\\x{code:02x}" for code in (*range(0x20), 0x7F)}
+)
+_STATES: Final[Mapping[bool | None, str]] = MappingProxyType(
+    {True: "LOGGED", False: "DROPPED", None: "UNKNOWN"}
 )
 
 
@@ -82,9 +86,8 @@ def _write_report(target: Path | None, inputs: Iterable[Path], report: Callable[
 
 
 def _verdict(decision: Decision, config_source: str) -> str:
-    state = "LOGGED" if decision.logged else "DROPPED"
     where = ", ".join(f"{config_source}:{line}" for line in decision.lines)
-    return f"{state} {decision.reason}" + (f" ({where})" if where else "")
+    return f"{_STATES[decision.logged]} {decision.reason}" + (f" ({where})" if where else "")
 
 
 def _doctor(_: argparse.Namespace) -> int:
@@ -108,9 +111,9 @@ def _inspect(arguments: argparse.Namespace) -> int:
             _out(f"{config.source}:{line}: {text}")
     for tag in EventTag:
         if not config.filters_for(tag):
-            state = "logged" if logged_without_filter(tag) else "dropped"
             ids = ", ".join(map(str, EVENT_IDS_BY_TAG[tag]))
-            _out(f"{config.source}: no filter for {tag} ({ids}), {state} by assumed default")
+            default = default_without_filter(tag)
+            _out(f"{config.source}: no filter for {tag} ({ids}), default: {default}")
     return EXIT_OK
 
 
@@ -130,8 +133,11 @@ def _check_event(arguments: argparse.Namespace) -> int:
     for item in evaluated:
         verdict = _verdict(item.decision, config.source)
         _out(f"{events.source}:{item.line}: EventID {item.event.event_id} {verdict}")
-    logged = sum(item.decision.logged for item in evaluated)
-    _out(f"{len(evaluated)} events: {logged} logged, {len(evaluated) - logged} dropped")
+    counts = Counter(item.decision.logged for item in evaluated)
+    _out(
+        f"{len(evaluated)} events: {counts[True]} logged, {counts[False]} dropped, "
+        f"{counts[None]} unknown"
+    )
     return EXIT_OK
 
 

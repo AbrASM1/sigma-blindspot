@@ -89,8 +89,8 @@ def test_inspect_lists_filters_with_their_lines(capsys: Capture, write: Writer) 
     ]
     assert f'{at("<ProcessTerminate")} ProcessTerminate onmatch="include"' in lines
     assert f'{at(">443<")}   DestinationPort condition="is" value="443"' in lines
-    assert f"{path}: no filter for ImageLoad (7), dropped by assumed default" in lines
-    assert f"{path}: no filter for RegistryEvent (12, 13, 14), logged by assumed default" in lines
+    assert f"{path}: no filter for ImageLoad (7), default: not logged" in lines
+    assert f"{path}: no filter for RegistryEvent (12, 13, 14), default: unknown" in lines
     assert not any("no filter for NetworkConnect" in line for line in lines)
 
 
@@ -168,8 +168,8 @@ def test_check_event_prints_a_verdict_per_event(capsys: Capture, write: Writer) 
         f"({at('>microsoft<')}, {at('>windows<')})",
         f"{events}:2: EventID 3 LOGGED matched an include filter ({at('>443<')})",
         f"{events}:4: EventID 5 DROPPED matched no include filter ({at('<ProcessTerminate')})",
-        f"{events}:5: EventID 1 LOGGED no filter for this event type, assumed default",
-        "4 events: 2 logged, 2 dropped",
+        f"{events}:5: EventID 1 UNKNOWN no filter for this event type, Sysmon default unverified",
+        "4 events: 1 logged, 2 dropped, 1 unknown",
     ]
 
 

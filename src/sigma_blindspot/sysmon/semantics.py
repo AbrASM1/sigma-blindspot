@@ -29,9 +29,9 @@ class Semantic(Enum):
     LIST_SEPARATOR = Status.DOCUMENTED, "`;` separates the values of the `any` and `all` conditions"
     IMAGE_CONDITION = Status.DOCUMENTED, "`image` matches the full path or the bare image name"
     UNFILTERABLE = Status.DOCUMENTED, "Event IDs 4, 16 and 255 cannot be filtered"
-    UNLISTED_EVENT_TYPES = (
-        Status.ASSUMED,
-        "Event types absent from the config are logged, except 3 and 7",
+    DISABLED_BY_DEFAULT = (
+        Status.DOCUMENTED,
+        "Without a filter, NetworkConnect (3) and ImageLoad (7) are not logged",
     )
     LEXICAL_COMPARISON = (
         Status.ASSUMED,

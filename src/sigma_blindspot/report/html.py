@@ -1,24 +1,26 @@
 import base64
 import hashlib
 import re
-from collections.abc import Iterable, Iterator
+from collections import Counter
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from html import escape
 from itertools import groupby
+from types import MappingProxyType
 from typing import Final
 
 from sigma_blindspot.sysmon.events import (
     EVENT_IDS_BY_TAG,
     TAG_BY_EVENT_ID,
+    Default,
     EventTag,
-    logged_without_filter,
+    default_without_filter,
 )
 from sigma_blindspot.sysmon.model import (
     Condition,
     Decision,
     Event,
     EventFilter,
-    Reason,
     Rule,
     SysmonConfig,
 )
@@ -155,6 +157,12 @@ _EVENTS_HEAD: Final = (
     "<tr><th>Line</th><th>Event</th><th>Verdict</th><th>Reason</th><th>Config lines</th>"
     "<th>Fields</th></tr>"
 )
+_DECISION_BADGES: Final[Mapping[bool | None, tuple[str, str]]] = MappingProxyType(
+    {True: ("ok", "LOGGED"), False: ("bad", "DROPPED"), None: ("warn", "UNKNOWN")}
+)
+_DEFAULT_BADGES: Final[Mapping[Default, str]] = MappingProxyType(
+    {Default.LOGGED: "ok", Default.NOT_LOGGED: "bad", Default.UNKNOWN: "warn"}
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,13 +216,13 @@ def _name(name: str | None) -> str:
     return "" if name is None else _code(name)
 
 
-def _logged(logged: bool) -> str:
-    return _badge("ok", "LOGGED") if logged else _badge("bad", "DROPPED")
-
-
 def _verdict(decision: Decision) -> str:
-    assumed = " " + _badge("warn", "assumed") if decision.reason is Reason.DEFAULT else ""
-    return _logged(decision.logged) + assumed
+    return _badge(*_DECISION_BADGES[decision.logged])
+
+
+def _default(tag: EventTag) -> str:
+    default = default_without_filter(tag)
+    return _badge(_DEFAULT_BADGES[default], default.upper())
 
 
 def _event_type(event_id: int) -> str:
@@ -252,21 +260,21 @@ def _header(config: SysmonConfig, config_sha256: str, events: EventsInput | None
 
 
 def _summary(config: SysmonConfig, events: EventsInput | None) -> str:
-    filtered = sum(1 for tag in EventTag if config.filters_for(tag))
-    decisions = [item.decision for item in events.evaluated] if events is not None else []
-    logged = sum(decision.logged for decision in decisions)
-    assumed = sum(decision.reason is Reason.DEFAULT for decision in decisions)
+    unfiltered = [tag for tag in EventTag if not config.filters_for(tag)]
+    unknown = sum(default_without_filter(tag) is Default.UNKNOWN for tag in unfiltered)
+    evaluated = events.evaluated if events is not None else ()
+    counts = Counter(item.decision.logged for item in evaluated)
     event_cards = (
-        _card("", str(len(decisions)), "events"),
-        _card("ok", str(logged), "logged"),
-        _card("bad", str(len(decisions) - logged), "dropped"),
-        _card("warn", str(assumed), "decided by assumed default"),
+        _card("", str(len(evaluated)), "events"),
+        _card("ok", str(counts[True]), "logged"),
+        _card("bad", str(counts[False]), "dropped"),
+        _card("warn", str(counts[None]), "unknown"),
     )
     config_cards = (
         _card("", str(len(config.filters)), "filters"),
         _card("", str(_condition_count(config)), "conditions"),
-        _card("", f"{filtered} / {len(EventTag)}", "event types filtered"),
-        _card("warn", str(len(EventTag) - filtered), "event types on assumed default"),
+        _card("", f"{len(EventTag) - len(unfiltered)} / {len(EventTag)}", "event types filtered"),
+        _card("warn", str(unknown), "event types with unverified default"),
     )
     groups = (event_cards, config_cards) if events is not None else (config_cards,)
     return "".join(f'<section class="cards">{"".join(cards)}</section>' for cards in groups)
@@ -356,7 +364,7 @@ def _config_section(config: SysmonConfig) -> str:
 def _defaults_section(config: SysmonConfig) -> str:
     rows = "\n".join(
         f"<tr><td>{escape(tag)}</td><td>{', '.join(map(str, EVENT_IDS_BY_TAG[tag]))}</td>"
-        f"<td>{_logged(logged_without_filter(tag))} {_badge('warn', 'assumed')}</td></tr>"
+        f"<td>{_default(tag)}</td></tr>"
         for tag in EventTag
         if not config.filters_for(tag)
     )
