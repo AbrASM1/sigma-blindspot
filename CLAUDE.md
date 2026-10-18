@@ -29,6 +29,8 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - `uv run python scripts/validate_regression.py`: fetches SigmaHQ and five public configs at
   pinned versions into the gitignored `.cache/` (network), then checks the evaluator, the encoding
   and the prover on SigmaHQ's regression samples; report in `.cache/regression.md`
+- `uv run python scripts/benchmark.py [--jobs N] [--timeout-ms N] [--output FILE]`: `analyze` of
+  SigmaHQ on the five configs, written to `bench/results.md` (milestone F only)
 - After any dependency change: run `uv lock` and commit `uv.lock` (CI uses `uv sync --locked`)
 - The dev machine is Windows (PowerShell). Lab tests run on a separate Windows VM with Sysmon.
 
@@ -105,9 +107,9 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
   config restored in `finally`), probes `p1-defaults` to `p7-empty-list-items`. Written and linted
   (PSScriptAnalyzer, 0 findings), not run yet: only the maintainer runs them, on the VM.
 - `scripts/`: `fetch_sigmahq.py`, `fetch_configs.py` (pinned commit, URLs and SHA-256),
-  `validate_regression.py` (no mismatch at the pinned SigmaHQ commit on the five configs);
-  `.github/workflows/regression.yml` runs it on demand.
-- `tests/`: unit, CLI, property-based and fuzz tests, 368 passing; `test_sources.py` rejects
+  `validate_regression.py` (no mismatch at the pinned SigmaHQ commit on the five configs),
+  `benchmark.py` (milestone F). `.github/workflows/regression.yml` runs the validation on demand.
+- `tests/`: unit, CLI, property-based and fuzz tests, 373 passing; `test_sources.py` rejects
   hidden characters in tracked files. CI runs on Windows and Linux.
 
 ## Sysmon semantics
@@ -154,8 +156,9 @@ text output of `inspect` and `check-event`, and `decoding.py` are frozen until E
   evaluator, the rule encoding and the prover checked against the JSON samples; manual workflow.
 - [x] E. Reports: `--format markdown`, `--format sarif` (2.1.0), `--navigator FILE` (layer 4.5).
   Cut: the `analyze` section of the HTML report (optional in the plan).
-- [ ] F. Benchmark `bench/run.py`, only after D passes and P1 is resolved; the maintainer approves
-  the numbers before `bench/results.md` is committed.
+- [ ] F. Benchmark `scripts/benchmark.py` (next to the fetch scripts it uses), only after D passes
+  and P1 is resolved; the maintainer approves the numbers before `bench/results.md` is committed.
+  Written and tested on fixtures, not run yet.
 - Out of scope: regex, CIDR and null support; a field check against the Sysmon schema; PyPI.
 - Done: BLIND verdicts with lines on SwiftOnSecurity and SigmaHQ, every OK confirmed,
   differential properties pass the intensive profile, D passes or every mismatch is explained,
