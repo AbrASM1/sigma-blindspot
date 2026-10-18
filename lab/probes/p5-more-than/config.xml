@@ -1,0 +1,9 @@
+<Sysmon schemaversion="4.90">
+  <EventFiltering>
+    <RuleGroup name="" groupRelation="or">
+      <NetworkConnect onmatch="include">
+        <DestinationPort condition="more than">5</DestinationPort>
+      </NetworkConnect>
+    </RuleGroup>
+  </EventFiltering>
+</Sysmon>

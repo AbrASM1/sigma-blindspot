@@ -1,0 +1,11 @@
+<Sysmon schemaversion="4.90">
+  <EventFiltering>
+    <RuleGroup name="" groupRelation="or">
+      <ProcessCreate onmatch="include">
+        <CommandLine condition="end with">MARKER-1 </CommandLine>
+        <CommandLine condition="contains"> MARKER-2</CommandLine>
+        <CommandLine condition="contains"> MARKER-3</CommandLine>
+      </ProcessCreate>
+    </RuleGroup>
+  </EventFiltering>
+</Sysmon>

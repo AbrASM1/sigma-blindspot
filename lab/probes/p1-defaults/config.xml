@@ -1,0 +1,4 @@
+<Sysmon schemaversion="4.90">
+  <EventFiltering>
+  </EventFiltering>
+</Sysmon>
