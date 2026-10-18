@@ -30,6 +30,27 @@ depend on.
   file identifies what was analysed.
 - The report never overwrites an input file.
 
+## Sigma rules
+
+Rules are loaded with pySigma, and the analysis works on pySigma's parsed condition tree with
+modifiers applied. The YAML is never interpreted by hand.
+
+- In scope: `product: windows`, no `service`, and a `category` with Sysmon event IDs, from the
+  table of pySigma's Sysmon pipeline (`process_creation` is 1, `registry_event` is 12, 13 and 14).
+  Any other rule is `SKIPPED` with the reason.
+- A file that fails to load (invalid YAML, unknown modifier, undefined identifier in the
+  condition) is `SKIPPED` with the error and never stops the analysis. Correlation and filter
+  rules are `SKIPPED`.
+- Directories are searched recursively for `*.yml` files, in a stable order.
+- Supported: plain values, `contains`, `startswith`, `endswith`, `*` and `?` wildcards anywhere,
+  `all`, `neq`, `windash`, the encoding modifiers (`base64`, `base64offset`, `wide`), and numbers,
+  compared as strings. Matching is case-insensitive, and the `EventID` field is the event ID.
+- Unsupported, each with its own reason: `cased`, `re`, `cidr`, `null`, `exists`, `lt`, `lte`, `gt`,
+  `gte`, `fieldref`, boolean values, timestamp modifiers, `expand` placeholders and keyword
+  searches.
+- A condition is split into top-level OR branches: the alternatives of the outermost `or`, of a
+  `1 of` and of a list of maps or values. Each branch is labelled with the selections it uses.
+
 ## Sysmon semantics implemented
 
 `documented` rows come from the
