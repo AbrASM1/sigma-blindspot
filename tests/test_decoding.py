@@ -9,7 +9,7 @@ from sigma_blindspot.errors import ConfigError
 SOURCE = "file.txt"
 
 
-@given(text=st.text().filter(lambda text: not text.startswith("﻿")), encoding=encodings)
+@given(text=st.text().filter(lambda text: not text.startswith("\ufeff")), encoding=encodings)
 def test_decodes_utf8_and_utf16_with_byte_order_marks(text: str, encoding: str) -> None:
     assert decode_text(encode(text, encoding), SOURCE, ConfigError) == text
 

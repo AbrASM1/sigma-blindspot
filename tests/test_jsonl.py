@@ -51,7 +51,7 @@ def test_skips_blank_lines_and_keeps_line_numbers() -> None:
 
 
 def test_only_line_feeds_separate_events() -> None:
-    value = "a b c\u0085d"
+    value = "a\u2028b\u2029c\u0085d"
     text = json.dumps({"EventID": 1, "CommandLine": value}, ensure_ascii=False) + "\r\n"
     assert parse_events(text.encode(), SOURCE) == ((1, Event(1, {"CommandLine": value})),)
 
