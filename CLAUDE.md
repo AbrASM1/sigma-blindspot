@@ -19,11 +19,14 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - `uv sync`: install from `uv.lock` (Python 3.12 comes from `.python-version`)
 - `uv run pytest`: full test suite, must stay green
 - `uv run ruff check .` then `uv run ruff format .`: CI also runs `ruff format --check`
-- `uv run mypy`: strict type check of `src` and `tests`, also run by CI
+- `uv run mypy`: strict type check of `src`, `tests` and `scripts`, also run by CI
 - `HYPOTHESIS_PROFILE=intensive uv run pytest` (PowerShell: set `$env:HYPOTHESIS_PROFILE`):
   10,000 examples per property, for deep checks before a release
 - `uv run sigma-blindspot doctor | inspect CONFIG | check-event CONFIG EVENTS`, `--html FILE`
   on the last two also writes a self-contained HTML report
+- `uv run python scripts/validate_regression.py`: fetches SigmaHQ and five public configs at
+  pinned versions into the gitignored `.cache/` (network), then checks the evaluator, the encoding
+  and the prover on SigmaHQ's regression samples; report in `.cache/regression.md`
 - After any dependency change: run `uv lock` and commit `uv.lock` (CI uses `uv sync --locked`)
 - The dev machine is Windows (PowerShell). Lab tests run on a separate Windows VM with Sysmon.
 
@@ -61,7 +64,7 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - Tests locate config lines with `conftest.line_of()`, never with hard-coded line numbers.
 - Small commits, imperative mood, prefixed `feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`.
 
-## Current state (milestone A)
+## Current state (milestone D)
 
 - `src/sigma_blindspot/sysmon/`: `parser.py` (stdlib expat, keeps line numbers, rejects DOCTYPE,
   reads UTF-8 and UTF-16, condition names ignore ASCII case), `model.py` (Event, Condition, Rule,
@@ -70,7 +73,7 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
   mapping, `default_without_filter`: `LOGGED`, `NOT_LOGGED` or `UNKNOWN`), `semantics.py`
   (registry of documented and assumed semantics; `@assumes(...)` marks the code relying on an
   assumption, and a test keeps the table in `docs/reference.md` in sync), `jsonl.py` (reads
-  exported events).
+  exported events), `evtx_json.py` (reads SigmaHQ's JSON exports of `.evtx` files).
 - `src/sigma_blindspot/decoding.py`: strict UTF-8 / UTF-16 (byte order mark) decoding shared by
   the config parser and the event reader; expat only ever sees decoded text.
 - `src/sigma_blindspot/cli.py`: argparse with `doctor` (checks in `doctor.py`), `inspect`,
@@ -97,7 +100,10 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - `lab/`: `Export-SysmonEvents.ps1`, `Invoke-Probe.ps1` (PREDICTED against OBSERVED, baseline
   config restored in `finally`), probes `p1-defaults` to `p7-empty-list-items`. Written and linted
   (PSScriptAnalyzer, 0 findings), not run yet: only the maintainer runs them, on the VM.
-- `tests/`: unit, CLI, property-based and fuzz tests, 338 passing; `test_sources.py` rejects
+- `scripts/`: `fetch_sigmahq.py`, `fetch_configs.py` (pinned commit, URLs and SHA-256),
+  `validate_regression.py` (no mismatch at the pinned SigmaHQ commit on the five configs);
+  `.github/workflows/regression.yml` runs it on demand.
+- `tests/`: unit, CLI, property-based and fuzz tests, 350 passing; `test_sources.py` rejects
   hidden characters in tracked files. CI runs on Windows and Linux.
 
 ## Sysmon semantics
@@ -140,7 +146,7 @@ text output of `inspect` and `check-event`, and `decoding.py` are frozen until E
 - [x] A. Lab kit in `lab/` (PowerShell 5.1 and 7): `Export-SysmonEvents.ps1`, `Invoke-Probe.ps1`,
   probes P1 (defaults) to P7; raw results in `lab/results/<probe>.md` once the maintainer has run
   them on the VM.
-- [ ] D. SigmaHQ regression validation: `scripts/fetch_sigmahq.py` at a pinned commit; the
+- [x] D. SigmaHQ regression validation: `scripts/fetch_sigmahq.py` at a pinned commit; the
   evaluator, the rule encoding and the prover checked against the JSON samples; manual workflow.
 - [ ] E. Reports: `--format markdown`, `--format sarif` (2.1.0), `--navigator FILE`.
 - [ ] F. Benchmark `bench/run.py`, only after D passes and P1 is resolved; the maintainer approves
