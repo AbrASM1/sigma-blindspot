@@ -61,7 +61,7 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - Tests locate config lines with `conftest.line_of()`, never with hard-coded line numbers.
 - Small commits, imperative mood, prefixed `feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`.
 
-## Current state (milestone C)
+## Current state (milestone C2)
 
 - `src/sigma_blindspot/sysmon/`: `parser.py` (stdlib expat, keeps line numbers, rejects DOCTYPE,
   reads UTF-8 and UTF-16, condition names ignore ASCII case), `model.py` (Event, Condition, Rule,
@@ -74,10 +74,14 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - `src/sigma_blindspot/decoding.py`: strict UTF-8 / UTF-16 (byte order mark) decoding shared by
   the config parser and the event reader; expat only ever sees decoded text.
 - `src/sigma_blindspot/cli.py`: argparse with `doctor` (checks in `doctor.py`), `inspect`,
-  `check-event` (`LOGGED`, `DROPPED` or `UNKNOWN` per event). `errors.py`: `ConfigError` and
-  `EventError`, both `(message, line, source)`.
+  `check-event` (`LOGGED`, `DROPPED` or `UNKNOWN` per event), `analyze` (text or JSON,
+  `--fail-on-blind`, `--timeout-ms`, `--jobs`). `errors.py`: `ConfigError` and `EventError`, both
+  `(message, line, source)`. `runner.py`: `prove_all()`, one `Prover` per worker process, same
+  output for any `--jobs`.
 - `src/sigma_blindspot/report/html.py`: pure `render()` of the HTML report (stdlib only, no
   JavaScript, CSP pinned to the embedded stylesheet hash, every input string escaped).
+  `report/analysis.py`: results sorted by verdict then path, text lines, JSON document
+  (`schema_version` 1).
 - `src/sigma_blindspot/sigma/`: `ir.py` (LoadedRule with top-level OR branches; And, Or, Not,
   Match, Unsupported; Equals, Prefix, Suffix, Contains, Glob with folded literals), `loader.py`
   (the only module importing pySigma: files and directories, scope check, SKIPPED entries,
@@ -90,7 +94,7 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
   checked in Python when simple, else as one regex membership in Z3; minimized conflicts become
   lemmas; A-Z excluded), `prove.py` (verdicts per event ID, branch and rule; one Z3 context per
   rule).
-- `tests/`: unit, CLI, property-based and fuzz tests, 317 passing; `test_sources.py` rejects
+- `tests/`: unit, CLI, property-based and fuzz tests, 329 passing; `test_sources.py` rejects
   hidden characters in tracked files. CI runs on Windows and Linux.
 
 ## Sysmon semantics
@@ -127,8 +131,9 @@ text output of `inspect` and `check-event`, and `decoding.py` are frozen until E
   case folding in Z3), SAT confirmed by the emulator and the evaluator, lines from
   `assert_and_track` cores with `core.minimize`. Verdicts per event ID, PARTIAL per top-level OR
   branch, one Z3 context per rule (results do not depend on rule order), 2000 ms per check.
-- [ ] C2. `analyze CONFIG RULES... [--format text|json] [--fail-on-blind] [--timeout-ms N]
-  [--jobs N]`: exit 0, 1 (BLIND or PARTIAL with `--fail-on-blind`), 2 (invalid config).
+- [x] C2. `analyze CONFIG RULES... [--format text|json] [--fail-on-blind] [--timeout-ms N]
+  [--jobs N]`: exit 0, 1 (BLIND or PARTIAL with `--fail-on-blind`), 2 (invalid config or a
+  missing rules path); fixtures in `tests/fixtures/`.
 - [ ] A. Lab kit in `lab/` (PowerShell 5.1 and 7): `Export-SysmonEvents.ps1`, `Invoke-Probe.ps1`,
   probes P1 (defaults) to P7; raw results in `lab/results/<probe>.md`.
 - [ ] D. SigmaHQ regression validation: `scripts/fetch_sigmahq.py` at a pinned commit; the

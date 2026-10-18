@@ -1,0 +1,12 @@
+title: Image that is both cmd and powershell
+id: 9a1b2c3d-4e5f-4a6b-8c7d-3e4f5a6b7c84
+status: test
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_cmd:
+        Image|endswith: '\cmd.exe'
+    selection_powershell:
+        Image|endswith: '\powershell.exe'
+    condition: all of selection_*

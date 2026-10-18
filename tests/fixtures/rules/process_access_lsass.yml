@@ -1,0 +1,10 @@
+title: Process opened LSASS
+id: 5a6b7c8d-9e0f-4a1b-8c2d-8e9f0a1b2c39
+status: test
+logsource:
+    category: process_access
+    product: windows
+detection:
+    selection:
+        TargetImage|endswith: '\lsass.exe'
+    condition: selection
