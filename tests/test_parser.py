@@ -1,6 +1,7 @@
 import pytest
 from conftest import DOC_RULE_GROUPS, DOC_SAMPLE, Writer, line_of
 from hypothesis import given
+from hypothesis import strategies as st
 from strategies import (
     SOURCE,
     XML_FRAGMENTS,
@@ -9,6 +10,7 @@ from strategies import (
     encode,
     encodings,
     fuzzed,
+    operators,
     render,
     xml_documents,
 )
@@ -110,6 +112,30 @@ def test_rule_elements_keep_their_relation_name_and_conditions() -> None:
         "technique_id=T1059.001",
     )
     assert parse(text).filters[0].items == (rule,)
+
+
+def test_condition_names_ignore_ascii_case() -> None:
+    text = sysmon(
+        '    <RuleGroup name="" groupRelation="or">',
+        '      <FileDelete onmatch="include">',
+        '        <TargetFilename condition="Contains">\\Users\\Public\\</TargetFilename>',
+        "      </FileDelete>",
+        "    </RuleGroup>",
+    )
+    condition = Condition(
+        "TargetFilename", Operator.CONTAINS, "\\Users\\Public\\", line_of(text, "Contains")
+    )
+    assert parse(text).filters[0].items == (condition,)
+
+
+@given(operator=operators, data=st.data())
+def test_any_ascii_casing_of_a_condition_name_gives_its_operator(
+    operator: Operator, data: st.DataObject
+) -> None:
+    name = "".join(data.draw(st.sampled_from((letter, letter.upper()))) for letter in operator)
+    text = sysmon(FILTER_START, f'      <Image condition="{name}">a</Image>', FILTER_END)
+    condition = Condition("Image", operator, "a", line_of(text, "<Image"))
+    assert parse(text).filters[0].items == (condition,)
 
 
 def test_condition_values_are_kept_literally() -> None:
@@ -311,6 +337,12 @@ FILTER_END = "    </ProcessCreate>"
             "<Image",
             "condition='contain' is not one of 'is', 'is any'",
             id="unknown-condition",
+        ),
+        pytest.param(
+            sysmon(FILTER_START, '      <Image condition="i\u017f">a</Image>', FILTER_END),
+            "<Image",
+            "condition='i\u017f' is not one of",
+            id="condition-name-beyond-ascii-case",
         ),
         pytest.param(
             sysmon(
