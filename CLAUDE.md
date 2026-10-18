@@ -61,7 +61,7 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
 - Tests locate config lines with `conftest.line_of()`, never with hard-coded line numbers.
 - Small commits, imperative mood, prefixed `feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`.
 
-## Current state (milestone B)
+## Current state (milestone C)
 
 - `src/sigma_blindspot/sysmon/`: `parser.py` (stdlib expat, keeps line numbers, rejects DOCTYPE,
   reads UTF-8 and UTF-16, condition names ignore ASCII case), `model.py` (Event, Condition, Rule,
@@ -83,7 +83,14 @@ maintainer, time-boxed to about 40 hours in total: MVP first, polish later.
   (the only module importing pySigma: files and directories, scope check, SKIPPED entries,
   conversion of the parsed tree), `evaluate.py` (three-valued reference evaluator, the oracle of
   the Z3 rule encoding).
-- `tests/`: unit, CLI, property-based and fuzz tests, 292 passing; `test_sources.py` rejects
+- `src/sigma_blindspot/prover/`: `strings.py` (`lit()` / `read()` around `StringVal` escapes,
+  nothing beyond U+2FFFF), `encode.py` (the config translated into the rule IR, with the lines
+  of each tracked item), `languages.py` (one regular language per pattern, unions factored by
+  shape), `search.py` (lazy SMT: Boolean skeleton in Z3; on a justified model, each field is
+  checked in Python when simple, else as one regex membership in Z3; minimized conflicts become
+  lemmas; A-Z excluded), `prove.py` (verdicts per event ID, branch and rule; one Z3 context per
+  rule).
+- `tests/`: unit, CLI, property-based and fuzz tests, 317 passing; `test_sources.py` rejects
   hidden characters in tracked files. CI runs on Windows and Linux.
 
 ## Sysmon semantics
@@ -101,7 +108,7 @@ lexical; leading or trailing whitespace in values compared literally; several fi
 same tag and onmatch combined with OR; `<Rule>` inside a legacy filter combined with AND; `<Rule>`
 combining its conditions with its own `groupRelation`; a condition on a field the event lacks
 never matching; empty items of a `;` list ignored; case-insensitivity following the Unicode
-lower-case mapping.
+lower-case mapping; events carrying every field the config or a rule names (prover).
 
 ## Roadmap, in order
 
@@ -115,12 +122,11 @@ text output of `inspect` and `check-event`, and `decoding.py` are frozen until E
   file is SKIPPED with a reason, never an abort), `ir.py` (And, Or, Not, Match, Unsupported;
   Equals, Prefix, Suffix, Contains, Glob with folded literals), `evaluate.py` (reference
   evaluator). Built from pySigma's parsed tree, never from YAML.
-- [ ] C. Z3 prover in `prover/`: `lit()` / `read()` around `StringVal` escapes; lower-cased
-  literals and no case folding in Z3; SAT is confirmed by the emulator and the evaluator (one
-  retry banning A-Z), else UNKNOWN. `encode_config` mirrors the emulator with tracked assertions
-  labelled by config lines and minimized cores. Verdicts per event ID: RULE_UNSAT, OK, DISABLED,
-  BLIND, UNKNOWN; PARTIAL per top-level OR branch. One solver per (config, event ID), push/pop
-  per rule, 2000 ms timeout by default.
+- [x] C. Z3 prover in `prover/`: lazy SMT over a Boolean skeleton with one regex membership per
+  field (several memberships on one string make Z3 time out), values searched without A-Z (no
+  case folding in Z3), SAT confirmed by the emulator and the evaluator, lines from
+  `assert_and_track` cores with `core.minimize`. Verdicts per event ID, PARTIAL per top-level OR
+  branch, one Z3 context per rule (results do not depend on rule order), 2000 ms per check.
 - [ ] C2. `analyze CONFIG RULES... [--format text|json] [--fail-on-blind] [--timeout-ms N]
   [--jobs N]`: exit 0, 1 (BLIND or PARTIAL with `--fail-on-blind`), 2 (invalid config).
 - [ ] A. Lab kit in `lab/` (PowerShell 5.1 and 7): `Export-SysmonEvents.ps1`, `Invoke-Probe.ps1`,

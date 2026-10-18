@@ -32,7 +32,17 @@ class Glob:
     parts: tuple[str | Wildcard, ...]
 
 
-type Pattern = Equals | Prefix | Suffix | Contains | Glob
+@dataclass(frozen=True, slots=True)
+class LessThan:
+    value: str
+
+
+@dataclass(frozen=True, slots=True)
+class MoreThan:
+    value: str
+
+
+type Pattern = Equals | Prefix | Suffix | Contains | Glob | LessThan | MoreThan
 
 
 @dataclass(frozen=True, slots=True)

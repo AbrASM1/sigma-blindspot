@@ -57,6 +57,10 @@ class Semantic(Enum):
     ABSENT_FIELD = Status.ASSUMED, "A condition on a field the event does not carry never matches"
     EMPTY_LIST_ITEM = Status.ASSUMED, "Empty items in a `;` list are ignored"
     CASE_FOLDING = Status.ASSUMED, "Case-insensitivity follows the Unicode lower-case mapping"
+    NAMED_FIELDS = (
+        Status.ASSUMED,
+        "Events carry every field that the config or a rule names for their type",
+    )
 
     def __init__(self, status: Status, behaviour: str) -> None:
         self.status = status
