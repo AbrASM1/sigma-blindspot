@@ -29,7 +29,7 @@ EVENTS = """\
 {"EventID": 3, "DestinationPort": "443", "Image": "C:\\\\chrome.exe"}
 
 {"EventID": 5, "Image": "C:\\\\x.exe"}
-{"EventID": 1, "Image": "C:\\\\x.exe"}
+{"EventID": 22, "QueryName": "example.org"}
 """
 
 
@@ -168,7 +168,7 @@ def test_check_event_prints_a_verdict_per_event(capsys: Capture, write: Writer) 
         f"({at('>microsoft<')}, {at('>windows<')})",
         f"{events}:2: EventID 3 LOGGED matched an include filter ({at('>443<')})",
         f"{events}:4: EventID 5 DROPPED matched no include filter ({at('<ProcessTerminate')})",
-        f"{events}:5: EventID 1 UNKNOWN no filter for this event type, Sysmon default unverified",
+        f"{events}:5: EventID 22 UNKNOWN no filter for this event type, Sysmon default unverified",
         "4 events: 1 logged, 2 dropped, 1 unknown",
     ]
 

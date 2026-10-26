@@ -154,7 +154,8 @@ CASES: list[Case] = [
         Reason.NOT_INCLUDED,
         ('<NetworkConnect onmatch="include"',),
     ),
-    (DOC_SAMPLE, 1, {"Image": "C:\\x.exe"}, None, Reason.UNVERIFIED_DEFAULT, ()),
+    (DOC_SAMPLE, 1, {"Image": "C:\\x.exe"}, True, Reason.LOGGED_BY_DEFAULT, ()),
+    (DOC_SAMPLE, 22, {"QueryName": "a.org"}, None, Reason.UNVERIFIED_DEFAULT, ()),
     (DOC_SAMPLE, 7, {"ImageLoaded": "C:\\x.dll"}, False, Reason.NOT_LOGGED_BY_DEFAULT, ()),
     (DOC_SAMPLE, 4, {}, True, Reason.UNFILTERABLE, ()),
     (

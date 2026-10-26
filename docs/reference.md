@@ -195,6 +195,7 @@ lab probe. `tests/test_semantics.py` keeps this table in sync with
 | `image` matches the full path or the bare image name | documented |
 | Event IDs 4, 16 and 255 cannot be filtered | documented |
 | Without a filter, NetworkConnect (3) and ImageLoad (7) are not logged | documented |
+| Without a filter, ProcessCreate (1) and ProcessTerminate (5) are logged (probe P1, Sysmon 15.22) | verified |
 | Condition names ignore ASCII case: `Contains` is `contains` | assumed |
 | `less than` and `more than` compare lower-cased values lexically | assumed |
 | Leading and trailing whitespace in values is compared literally | assumed |
@@ -208,10 +209,11 @@ lab probe. `tests/test_semantics.py` keeps this table in sync with
 
 ## Known limitations
 
-- What Sysmon logs for an event type that the configuration does not mention is documented only
-  for NetworkConnect (3) and ImageLoad (7), which are disabled by default. For every other event
-  type, `check-event` prints `UNKNOWN` and `inspect` prints `default: unknown` until lab probe
-  P1 settles it.
+- What Sysmon logs for an event type that the configuration does not mention is known for four
+  types: NetworkConnect (3) and ImageLoad (7) are not logged (documented), ProcessCreate (1) and
+  ProcessTerminate (5) are logged (lab probe P1, `lab/results/p1-defaults.md`). For every other
+  event type, `check-event` prints `UNKNOWN` and `inspect` prints `default: unknown`: P1 did not
+  observe them, but without a positive control that is not proof that they are off.
 - Field names are not checked against the Sysmon schema: a misspelled field is accepted and its
   conditions never match.
 - The prover assumes that events carry every field the configuration or the rule names for their

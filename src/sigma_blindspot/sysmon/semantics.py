@@ -33,6 +33,11 @@ class Semantic(Enum):
         Status.DOCUMENTED,
         "Without a filter, NetworkConnect (3) and ImageLoad (7) are not logged",
     )
+    LOGGED_BY_DEFAULT = (
+        Status.VERIFIED,
+        "Without a filter, ProcessCreate (1) and ProcessTerminate (5) are logged "
+        "(probe P1, Sysmon 15.22)",
+    )
     CONDITION_NAME_CASE = (
         Status.ASSUMED,
         "Condition names ignore ASCII case: `Contains` is `contains`",

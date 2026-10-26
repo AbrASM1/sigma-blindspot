@@ -111,7 +111,7 @@ def test_summary_cards_count_events_and_configuration() -> None:
         Event(6, {"Signature": "Microsoft Windows"}),
         Event(3, {"DestinationPort": "443", "Image": "C:\\chrome.exe"}),
         Event(5, {"Image": "C:\\x.exe"}),
-        Event(1, {"Image": "C:\\x.exe"}),
+        Event(22, {"QueryName": "x.org"}),
     ]
     document = render_report("0.1.0", config, DIGEST, evaluated(config, events))
     cards = re.findall(
@@ -125,7 +125,7 @@ def test_summary_cards_count_events_and_configuration() -> None:
         ("", "4", "filters"),
         ("", "5", "conditions"),
         ("", f"3 / {len(EventTag)}", "event types filtered"),
-        ("warn", str(len(EventTag) - 4), "event types with unverified default"),
+        ("warn", str(len(EventTag) - 5), "event types with unverified default"),
     ]
 
 

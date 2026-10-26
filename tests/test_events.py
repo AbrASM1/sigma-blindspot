@@ -38,8 +38,12 @@ def test_sigma_categories_map_to_known_event_ids() -> None:
     assert SIGMA_CATEGORY_TO_EVENT_IDS["registry_event"] == (12, 13, 14)
 
 
-def test_only_network_connect_and_image_load_have_a_documented_default() -> None:
+def test_only_documented_or_probed_defaults_are_decided() -> None:
     defaults = {tag: default_without_filter(tag) for tag in EventTag}
-    not_logged = {tag for tag, default in defaults.items() if default is Default.NOT_LOGGED}
-    assert not_logged == {EventTag.NETWORK_CONNECT, EventTag.IMAGE_LOAD}
-    assert all(defaults[tag] is Default.UNKNOWN for tag in EventTag if tag not in not_logged)
+    decided = {tag: default for tag, default in defaults.items() if default is not Default.UNKNOWN}
+    assert decided == {
+        EventTag.PROCESS_CREATE: Default.LOGGED,
+        EventTag.PROCESS_TERMINATE: Default.LOGGED,
+        EventTag.NETWORK_CONNECT: Default.NOT_LOGGED,
+        EventTag.IMAGE_LOAD: Default.NOT_LOGGED,
+    }

@@ -95,6 +95,12 @@ def test_an_empty_include_disables_its_event_type() -> None:
     assert proof.reason == "the config drops every event of this type"
 
 
+def test_an_event_type_logged_by_default_lets_the_rule_fire() -> None:
+    proof = proof_of("sel:\n  Image|endswith: '\\x.exe'\ncondition: sel\n", "process_termination")
+    assert proof.verdict is Verdict.OK and proof.example is not None
+    assert proof.example.event_id == 5
+
+
 def test_an_unverified_default_gives_unknown() -> None:
     proof = proof_of("sel:\n  GrantedAccess: '0x1fffff'\ncondition: sel\n", "process_access")
     assert (proof.verdict, proof.reason) == (
