@@ -40,6 +40,7 @@ def summarize(name: str, config_text: str, results: Sequence[Result], seconds: f
         f"| {line} | {rules} | {escape(source[line - 1].strip())} |"
         for line, rules in blinding_lines(results)
     ]
+    unfiltered = len(dict(rules_by_line(results)).get(None, []))
     return "\n".join(
         [
             f"## {name}",
@@ -55,6 +56,9 @@ def summarize(name: str, config_text: str, results: Sequence[Result], seconds: f
             "| Line | Rules | Element |",
             "| --- | --- | --- |",
             *lines,
+            "",
+            f"Rules `BLIND` or `PARTIAL` without a configuration line, because their event type"
+            f" has no filter and is not logged without one: {unfiltered}.",
             "",
         ]
     )
@@ -83,6 +87,11 @@ def header(timeout_ms: int, jobs: int) -> str:
             "configuration, that is what it accepts not to see to reduce noise, not a defect.",
             "`UNKNOWN` covers unsupported Sigma constructs, Sysmon defaults not verified by a lab",
             "probe, and Z3 timeouts. Every assumption is listed in `docs/reference.md`.",
+            "",
+            "`BLIND` is a proof; `OK` is not a guarantee that real attacks are logged: it only",
+            "means that Z3 found one event that matches the rule and is logged. What Sysmon logs",
+            "for an event type without a filter comes from lab probes on Sysmon 15.22",
+            "(`lab/results/`) and may differ on other versions.",
             "",
         ]
     )

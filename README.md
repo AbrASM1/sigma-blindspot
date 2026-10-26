@@ -82,3 +82,17 @@ events.jsonl:4: EventID 22 DROPPED no filter for this event type, not logged by 
 Exit codes: `0` success, `1` a `BLIND`, `MISSED` or `PARTIAL` rule with `--fail-on-blind`, a failed `doctor` check or output closed early, `2` invalid input. Verdicts, encodings, implemented Sysmon semantics and known limitations: `docs/reference.md`.
 
 Not supported yet: regular expressions, CIDR ranges and null values in Sigma rules, a check of field names against the Sysmon schema, a PyPI release.
+
+## Benchmark
+
+`analyze` of SigmaHQ's Windows rules (commit `b7920ed`, 2420 rules) on five public configurations, from [`bench/results.md`](bench/results.md):
+
+| Configuration | BLIND | PARTIAL | UNKNOWN | OK | SKIPPED |
+| --- | --- | --- | --- | --- | --- |
+| SwiftOnSecurity | 142 | 0 | 120 | 1609 | 549 |
+| Neo23x0 | 21 | 0 | 129 | 1721 | 549 |
+| Neo23x0 block | 21 | 0 | 129 | 1721 | 549 |
+| sysmon-modular | 16 | 1 | 137 | 1717 | 549 |
+| sysmon-modular excludes-only | 25 | 1 | 128 | 1717 | 549 |
+
+A `BLIND` rule shows what a configuration accepts not to see, usually to keep the volume of events down; it is not a defect of the configuration. On SwiftOnSecurity, 100 of the 142 `BLIND` rules come from one line, the `ImageLoad` include filter. [`bench/results.md`](bench/results.md) lists the lines responsible for each configuration, the versions and the method. Reproduce it with `uv run python scripts/benchmark.py --jobs 4` (network access, about three minutes).

@@ -40,6 +40,8 @@ def test_summary_counts_verdicts_and_shows_the_blinding_elements(results: list[R
     assert "| BLIND | 5 |" in lines
     element = escape('<ParentImage condition="end with">\\ccmexec.exe</ParentImage>')
     assert f"| {line_of(TEXT, 'ccmexec.exe')} | 1 | {element} |" in lines
+    assert lines[-1].startswith("Rules `BLIND` or `PARTIAL` without a configuration line")
+    assert lines[-1].endswith(": 2.")
 
 
 @pytest.mark.parametrize("ending", ["\r\n", "\r"])
@@ -54,3 +56,4 @@ def test_header_states_versions_sources_and_method() -> None:
     assert all(config.url in text and config.sha256 in text for config in CONFIGS)
     assert "4 worker processes, 2000 ms per Z3 check" in text
     assert "what it accepts not to see" in text
+    assert "`OK` is not a guarantee" in text and "Sysmon 15.22" in text
