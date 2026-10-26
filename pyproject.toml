@@ -3,6 +3,7 @@ name = "sigma-blindspot"
 version = "0.1.0"
 description = "Static analyzer that proves which Sigma rules can never fire under a given Sysmon configuration."
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "pysigma>=1.5.1,<2",
