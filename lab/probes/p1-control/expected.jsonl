@@ -1,0 +1,18 @@
+{"EventID": 1, "ProbeKey": "MARKER-1", "Image": "C:\\Windows\\Temp\\MARKER\\MARKER-5.exe", "CommandLine": "C:\\Windows\\Temp\\MARKER\\MARKER-5.exe /c rem MARKER-1"}
+{"EventID": 2, "ProbeKey": "MARKER-2", "TargetFilename": "C:\\Windows\\Temp\\MARKER\\MARKER-2.txt"}
+{"EventID": 3, "ProbeKey": "PID", "ProbeMatch": "DestinationPort", "DestinationPort": "80"}
+{"EventID": 5, "ProbeKey": "MARKER-5", "Image": "C:\\Windows\\Temp\\MARKER\\MARKER-5.exe"}
+{"EventID": 7, "ProbeKey": "MARKER-7", "ImageLoaded": "C:\\Windows\\Temp\\MARKER\\MARKER-7.dll"}
+{"EventID": 10, "ProbeKey": "MARKER-10", "TargetImage": "C:\\Windows\\Temp\\MARKER\\MARKER-10.exe"}
+{"EventID": 11, "ProbeKey": "MARKER-11", "TargetFilename": "C:\\Windows\\Temp\\MARKER\\MARKER-11.txt"}
+{"EventID": 12, "ProbeKey": "MARKER", "TargetObject": "HKU\\S-1-5-21\\Software\\SigmaBlindspotProbe\\MARKER"}
+{"EventID": 13, "ProbeKey": "MARKER-13", "TargetObject": "HKU\\S-1-5-21\\Software\\SigmaBlindspotProbe\\MARKER\\MARKER-13"}
+{"EventID": 14, "ProbeKey": "MARKER-14", "TargetObject": "HKU\\S-1-5-21\\Software\\SigmaBlindspotProbe\\MARKER", "NewName":"HKU\\S-1-5-21\\Software\\SigmaBlindspotProbe\\MARKER-14"}
+{"EventID": 15, "ProbeKey": "MARKER-15", "TargetFilename": "C:\\Windows\\Temp\\MARKER\\MARKER-15.txt:probe"}
+{"EventID": 17, "ProbeKey": "MARKER-17", "PipeName": "\\MARKER-17"}
+{"EventID": 18, "ProbeKey": "MARKER-17", "PipeName": "\\MARKER-17"}
+{"EventID": 22, "ProbeKey": "PID", "ProbeMatch": "QueryName", "QueryName": "example.org"}
+{"EventID": 23, "ProbeKey": "MARKER-23", "TargetFilename": "C:\\Windows\\Temp\\MARKER\\MARKER-23.txt"}
+{"EventID": 24, "ProbeKey": "PID"}
+{"EventID": 26, "ProbeKey": "MARKER-23", "TargetFilename": "C:\\Windows\\Temp\\MARKER\\MARKER-23.txt"}
+{"EventID": 29, "ProbeKey": "MARKER-5", "TargetFilename": "C:\\Windows\\Temp\\MARKER\\MARKER-5.exe"}

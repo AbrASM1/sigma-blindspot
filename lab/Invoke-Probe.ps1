@@ -85,7 +85,7 @@ function Test-Observed {
 function Get-Version {
     $path = (Get-Command -Name $Sysmon).Source
     $binary = (Get-Item -LiteralPath $path).VersionInfo.ProductVersion
-    $text = (& $Sysmon -nobanner -s) -join "`n"
+    $text = ((& $Sysmon -nobanner -s) -join "`n") -replace "`0", ''
     $schema = if ($text -match 'schemaversion="([0-9.]+)"') { $Matches[1] } else { 'unknown' }
     "Sysmon $binary, schema $schema"
 }
@@ -102,6 +102,8 @@ $run = Join-Path (Join-Path $PSScriptRoot 'out') "$Probe-$marker"
 New-Item -ItemType Directory -Path $run | Out-Null
 $config = Join-Path $run 'config.xml'
 $expectedFile = Join-Path $run 'expected.jsonl'
+$triggerScript = Join-Path $directory 'trigger.ps1'
+$triggerLog = Join-Path $run 'trigger.log'
 Write-Marked -Source (Join-Path $directory 'config.xml') -Destination $config -Marker $marker
 Write-Marked -Source (Join-Path $directory 'expected.jsonl') -Destination $expectedFile -Marker $marker
 
@@ -119,8 +121,11 @@ try {
         $shell = (Get-Process -Id $PID).Path
         $arguments = @(
             '-NoProfile', '-ExecutionPolicy', 'Bypass',
-            '-File', (Join-Path $directory 'trigger.ps1'), '-Marker', $marker
+            '-File', $triggerScript, '-Marker', $marker
         )
+        if ((Get-Command -Name $triggerScript).Parameters.ContainsKey('Log')) {
+            $arguments += @('-Log', $triggerLog)
+        }
         $trigger = Start-Process -FilePath $shell -ArgumentList $arguments -Wait -PassThru -WindowStyle Hidden
         $triggerId = $trigger.Id
         if ($trigger.ExitCode -ne 0) {
@@ -157,6 +162,12 @@ else {
         $prediction = $predicted[$number]
         $verdict = if ($prediction -eq $state) { 'agree' } else { 'DIFFER' }
         $rows.Add(("| {0} | {1} | {2} | {3} | {4} | {5} |" -f $number, (Get-Field -Object $expected -Name 'EventID'), (Get-Field -Object $expected -Name 'ProbeKey'), $prediction, $state, $verdict))
+    }
+    if (Test-Path -LiteralPath $triggerLog) {
+        $rows.Add('')
+        foreach ($entry in [System.IO.File]::ReadAllLines($triggerLog)) {
+            $rows.Add("trigger: $entry")
+        }
     }
 }
 $rows | Write-Output

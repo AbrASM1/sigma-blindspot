@@ -1,0 +1,48 @@
+<Sysmon schemaversion="4.90">
+  <CaptureClipboard />
+  <EventFiltering>
+    <ProcessCreate onmatch="include">
+      <CommandLine condition="contains">MARKER</CommandLine>
+    </ProcessCreate>
+    <FileCreateTime onmatch="include">
+      <TargetFilename condition="contains">MARKER</TargetFilename>
+    </FileCreateTime>
+    <NetworkConnect onmatch="include">
+      <DestinationPort condition="is">80</DestinationPort>
+    </NetworkConnect>
+    <ProcessTerminate onmatch="include">
+      <Image condition="contains">MARKER</Image>
+    </ProcessTerminate>
+    <ImageLoad onmatch="include">
+      <ImageLoaded condition="contains">MARKER</ImageLoaded>
+    </ImageLoad>
+    <ProcessAccess onmatch="include">
+      <TargetImage condition="contains">MARKER</TargetImage>
+    </ProcessAccess>
+    <FileCreate onmatch="include">
+      <TargetFilename condition="contains">MARKER</TargetFilename>
+    </FileCreate>
+    <RegistryEvent onmatch="include">
+      <TargetObject condition="contains">MARKER</TargetObject>
+    </RegistryEvent>
+    <FileCreateStreamHash onmatch="include">
+      <TargetFilename condition="contains">MARKER</TargetFilename>
+    </FileCreateStreamHash>
+    <PipeEvent onmatch="include">
+      <PipeName condition="contains">MARKER</PipeName>
+    </PipeEvent>
+    <DnsQuery onmatch="include">
+      <QueryName condition="is">example.org</QueryName>
+    </DnsQuery>
+    <FileDelete onmatch="include">
+      <TargetFilename condition="contains">MARKER</TargetFilename>
+    </FileDelete>
+    <ClipboardChange onmatch="exclude" />
+    <FileDeleteDetected onmatch="include">
+      <TargetFilename condition="contains">MARKER</TargetFilename>
+    </FileDeleteDetected>
+    <FileExecutableDetected onmatch="include">
+      <TargetFilename condition="contains">MARKER</TargetFilename>
+    </FileExecutableDetected>
+  </EventFiltering>
+</Sysmon>

@@ -35,7 +35,9 @@ Runs one probe from `lab\probes\<name>`:
    child PowerShell, waits, and exports the events logged meanwhile.
 4. Always restores `-BaselineConfig` with `sysmon -c`, even after an error.
 5. Prints PREDICTED against OBSERVED for each expected event, with the Sysmon version and schema
-   version, and writes the table to `lab\out\<name>-<marker>\result.md`.
+   version, and writes the table to `lab\out\<name>-<marker>\result.md`. A trigger with a `-Log`
+   parameter writes one line per action, `done` or `failed` with the error, and these lines
+   follow the table.
 
 An expected event is observed when an exported event has the same `EventID` and either a field
 containing its `ProbeKey` (a marker such as `MARKER-1`), or, for `ProbeKey` `PID`, a
@@ -47,6 +49,7 @@ must also be equal, comma-separated. Both keys are ignored by the emulator.
 | Probe | Question |
 | --- | --- |
 | `p1-defaults` | What is logged for event types absent from the configuration? |
+| `p1-control` | Is each `p1-defaults` action observed when its event type is logged? |
 | `p2-condition-name-case` | Is `condition="Contains"` accepted, and does it behave like `contains`? |
 | `p3-several-filters` | Do two filters with the same tag and `onmatch` combine with OR? |
 | `p4-legacy-rule` | Does a `<Rule>` in a filter without RuleGroup combine with AND? |
