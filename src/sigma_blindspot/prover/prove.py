@@ -30,6 +30,7 @@ class Verdict(StrEnum):
     OK = "OK"
     PARTIAL = "PARTIAL"
     BLIND = "BLIND"
+    MISSED = "MISSED"
     DISABLED = "DISABLED"
     RULE_UNSAT = "RULE_UNSAT"
     UNKNOWN = "UNKNOWN"
@@ -70,6 +71,14 @@ class BranchProof:
 
 
 @dataclass(frozen=True, slots=True)
+class Recorded:
+    source: str
+    event_id: int
+    reason: str
+    lines: Lines
+
+
+@dataclass(frozen=True, slots=True)
 class Proof:
     rule: LoadedRule
     verdict: Verdict
@@ -77,6 +86,7 @@ class Proof:
     lines: Lines
     example: Example | None
     branches: tuple[BranchProof, ...]
+    recorded: tuple[Recorded, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

@@ -19,6 +19,7 @@ from sigma_blindspot.report.markdown import markdown_lines
 from sigma_blindspot.report.navigator import layer_document
 from sigma_blindspot.report.sarif import sarif_document
 from sigma_blindspot.runner import prove_all
+from sigma_blindspot.samples import check_samples, load_samples
 from sigma_blindspot.sigma.ir import LoadedRule, Skipped
 from sigma_blindspot.sigma.loader import load_rules
 from sigma_blindspot.sysmon.events import EVENT_IDS_BY_TAG, EventTag, default_without_filter
@@ -162,9 +163,13 @@ def _analyze(arguments: argparse.Namespace) -> int:
     config = parse_config(data, str(arguments.config))
     loaded = load_rules(arguments.rules)
     rules = [item for item in loaded if isinstance(item, LoadedRule)]
+    samples = None if arguments.samples is None else load_samples(arguments.samples)
     proofs = prove_all(config, data, rules, arguments.timeout_ms, arguments.jobs)
+    if samples is not None:
+        proofs = check_samples(config, proofs, samples)
     skipped = (item for item in loaded if isinstance(item, Skipped))
-    analysis = Analysis(_version(), config.source, _sha256(data), (*proofs, *skipped))
+    source = None if arguments.samples is None else str(arguments.samples)
+    analysis = Analysis(_version(), config.source, _sha256(data), (*proofs, *skipped), source)
     inputs = (arguments.config, *(Path(item.source) for item in loaded))
     _write_report(arguments.navigator, inputs, lambda: layer_document(analysis))
     for line in _FORMATS[arguments.format](analysis):
@@ -215,7 +220,15 @@ def _parser() -> argparse.ArgumentParser:
         help="also write an ATT&CK Navigator layer of the blind techniques to FILE",
     )
     analyze.add_argument(
-        "--fail-on-blind", action="store_true", help="exit with 1 if a rule is BLIND or PARTIAL"
+        "--fail-on-blind",
+        action="store_true",
+        help="exit with 1 if a rule is BLIND, MISSED or PARTIAL",
+    )
+    analyze.add_argument(
+        "--samples",
+        type=Path,
+        metavar="DIR",
+        help="SigmaHQ checkout whose regression_data samples can turn OK or PARTIAL into MISSED",
     )
     analyze.add_argument(
         "--timeout-ms",

@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
-import yaml
 import z3
 from fetch_configs import fetch_configs
 from fetch_sigmahq import COMMIT, fetch_sigmahq
@@ -14,11 +13,12 @@ from fetch_sigmahq import COMMIT, fetch_sigmahq
 from sigma_blindspot.errors import EventError
 from sigma_blindspot.prover.prove import Proof, Prover, Verdict
 from sigma_blindspot.prover.search import Search
+from sigma_blindspot.samples import Sample, matching, samples
 from sigma_blindspot.sigma.evaluate import evaluate
 from sigma_blindspot.sigma.ir import And, Equals, LoadedRule, Match, Node, unsupported
 from sigma_blindspot.sigma.loader import load_rules
 from sigma_blindspot.sysmon.conditions import fold
-from sigma_blindspot.sysmon.evtx_json import SYSMON_PROVIDER, load_evtx_json
+from sigma_blindspot.sysmon.evtx_json import load_evtx_json
 from sigma_blindspot.sysmon.model import Event, SysmonConfig
 from sigma_blindspot.sysmon.parser import load_config
 
@@ -28,37 +28,10 @@ _CANNOT_FIRE: Final = frozenset({Verdict.BLIND, Verdict.DISABLED, Verdict.RULE_U
 
 
 @dataclass(frozen=True, slots=True)
-class Sample:
-    rule_id: str
-    match_count: int | None
-    path: Path
-
-
-@dataclass(frozen=True, slots=True)
 class Mismatch:
     check: str
     rule: str
     detail: str
-
-
-def samples(sigmahq: Path) -> Iterator[Sample]:
-    for info in sorted((sigmahq / "regression_data" / "rules" / "windows").rglob("info.yml")):
-        document = yaml.safe_load(info.read_text(encoding="utf-8"))
-        rule_ids = [str(item["id"]) for item in document.get("rule_metadata") or []]
-        for test in document.get("regression_tests_info") or []:
-            if test.get("provider") != SYSMON_PROVIDER:
-                continue
-            path = (sigmahq / str(test["path"])).with_suffix(".json")
-            expected = test.get("match_count")
-            for rule_id in rule_ids:
-                yield Sample(rule_id, None if expected is None else int(expected), path)
-
-
-def matching(rule: LoadedRule, events: Sequence[Event]) -> tuple[list[Event], bool]:
-    relevant = [event for event in events if event.event_id in rule.event_ids]
-    outcomes = [(event, evaluate(rule.condition, event)) for event in relevant]
-    found = [event for event, outcome in outcomes if outcome is True]
-    return found, any(outcome is None for _, outcome in outcomes)
 
 
 def pinned_satisfiable(condition: Node, event: Event) -> bool | None:

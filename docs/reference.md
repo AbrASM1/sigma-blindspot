@@ -12,27 +12,31 @@
 - Every command prints only printable ASCII, errors included. Any other character, including a
   control character in a file name, is escaped, so output redirected on Windows (cp1252) stays
   readable and a file name cannot inject terminal escape sequences.
-- Exit codes: `0` success, `1` a `doctor` check failed, `analyze --fail-on-blind` found a `BLIND`
-  or `PARTIAL` rule, or the reader closed the output early, `2` invalid input (configuration,
-  events, or a rules path that does not exist).
+- Exit codes: `0` success, `1` a `doctor` check failed, `analyze --fail-on-blind` found a `BLIND`,
+  `MISSED` or `PARTIAL` rule, or the reader closed the output early, `2` invalid input
+  (configuration, events, samples, or a rules path that does not exist).
 
 ## analyze
 
 `analyze CONFIG RULES...` proves every rule found in `RULES` (files, or directories searched for
 `*.yml`) against `CONFIG`.
 
-- Text output: one line per rule, sorted by verdict (`BLIND`, `PARTIAL`, `RULE_UNSAT`, `UNKNOWN`,
-  `OK`, `SKIPPED`) then by path, with the title, the category and its event IDs, the reason and
-  the configuration lines responsible. A summary line counts each verdict.
-- `--format json`: `schema_version` (1), `tool` (name and version), `config` (path and
-  SHA-256), `summary` (count per verdict) and `results`. Each result has the verdict, the rule
-  path, title, id, category, event IDs, tags, reason and lines, an `example` event for `OK` and
-  `PARTIAL`, and `branches` with one finding per event ID.
-- `--format markdown`: the count per verdict, then the `BLIND` and `PARTIAL` rules grouped by
-  responsible configuration line, the lines blinding the most rules first. A rule appears under
+- Text output: one line per rule, sorted by verdict (`BLIND`, `MISSED`, `PARTIAL`, `RULE_UNSAT`,
+  `UNKNOWN`, `OK`, `SKIPPED`) then by path, with the title, the category and its event IDs, the
+  reason and the configuration lines responsible. A summary line counts each verdict; `MISSED` is
+  counted only with `--samples`.
+- `--format json`: `schema_version` (2), `tool` (name and version), `config` (path and
+  SHA-256), `samples` (the `--samples` folder, or `null`), `summary` (count per verdict) and
+  `results`. Each result has the verdict, the rule path, title, id, category, event IDs, tags,
+  reason and lines, an `example` event for `OK`, `PARTIAL` and `MISSED`, `branches` with one
+  finding per event ID, and `recorded`: for `MISSED`, each sample event that matches the rule,
+  with its file, event ID, the emulator's reason and the configuration lines. Version 2 added
+  `MISSED`, `samples` and `recorded`.
+- `--format markdown`: the count per verdict, then the `BLIND`, `MISSED` and `PARTIAL` rules
+  grouped by responsible configuration line, the lines blinding the most rules first. A rule appears under
   each of its lines; rules without one (an event type not logged without a filter) come last.
   Rule text is escaped, so a title cannot inject Markdown or HTML.
-- `--format sarif`: SARIF 2.1.0, one result per `BLIND` or `PARTIAL` rule. The primary location
+- `--format sarif`: SARIF 2.1.0, one result per `BLIND`, `MISSED` or `PARTIAL` rule. The primary location
   is the first responsible configuration line, or the configuration file when no line is
   responsible; the related locations are the rule file and the other responsible lines, and the
   result carries the rule's tags. The configuration is listed with its SHA-256.
@@ -40,6 +44,7 @@
   Windows): the techniques of the `attack.tXXXX` tags whose analysed rules are all `BLIND`. A
   technique with one rule that can fire, or that is not decided, is left out. `FILE` is never
   one of the inputs.
+- `--samples DIR` checks the rules against real attack samples (see "Recorded attacks").
 - `--timeout-ms N` limits each Z3 check (default 2000). `--jobs N` proves rules in N worker
   processes; the output is the same as with one.
 - A rule file that fails to load is reported as `SKIPPED` and never stops the analysis.
@@ -91,6 +96,7 @@ match the rule and still be logged by the configuration.
 | `OK` | The rule is not provably blind: Z3 found an example event that matches the rule and is logged, confirmed by the emulator (logged) and the Sigma evaluator (matches). It is not a guarantee that real attacks are logged. |
 | `PARTIAL` | `OK`, but some top-level OR branches of the rule can never fire. They are listed with the configuration lines responsible. |
 | `BLIND` | No event can match the rule and be logged: Z3 proved it, or the event types are not logged at all. The configuration lines come from a minimized unsatisfiable core. |
+| `MISSED` | Only with `--samples`: the prover says `OK` or `PARTIAL`, but every event of SigmaHQ's recorded attack that matches the rule is dropped by the configuration. The configuration lines come from the emulator's decisions on those events. |
 | `RULE_UNSAT` | The rule contradicts itself, whatever the configuration. |
 | `UNKNOWN` | Not decided, with the reason: unsupported Sigma construct, unverified Sysmon default, Z3 timeout, or a Z3 model that the emulator and the evaluator could not confirm. |
 | `SKIPPED` | The rule or file was not analysed (see "Sigma rules"). |
@@ -122,6 +128,29 @@ How the verdicts are computed:
 - Each rule is proved in its own Z3 context, so a verdict, its lines and its example do not
   depend on the other rules or on the order they are proved in.
 - Each check has a timeout, 2000 ms by default. A timeout gives `UNKNOWN`.
+
+## Recorded attacks
+
+`analyze --samples DIR` reads real attack samples. `DIR` is a SigmaHQ checkout, or any folder
+with the same `regression_data` layout: an `info.yml` lists the rule ids it tests
+(`rule_metadata`) and its samples (`regression_tests_info`), and each Sysmon sample is the JSON
+export next to the `.evtx` file it names. Samples of other providers are ignored, and so is a
+sample without its JSON export.
+
+For each `OK` or `PARTIAL` rule with samples, the events of the rule's event IDs are evaluated:
+
+- If at least one event matches the rule, and the emulator drops every event that matches, the
+  rule becomes `MISSED` with the reason "SigmaHQ's recorded attack is dropped by the config".
+  The lines are those of the emulator's decisions: the exclude conditions that matched, or the
+  include filters that did not.
+- An event that is logged, or whose emulator decision is `UNKNOWN`, keeps the prover's verdict.
+  So does an event that the evaluator cannot decide (unsupported construct) and that is not
+  dropped: it might be a matching event that is logged.
+- `BLIND`, `RULE_UNSAT`, `UNKNOWN` and `SKIPPED` rules are not changed.
+
+`MISSED` is evidence, not a proof: it shows that one recorded attack is not visible. Another run
+of the same attack, with other paths or command lines, may be logged. An invalid `info.yml` or
+JSON sample is an error (exit code `2`), like an invalid configuration.
 
 ## Validation on SigmaHQ regression data
 

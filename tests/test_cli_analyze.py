@@ -70,7 +70,8 @@ def test_analyze_writes_json_with_confirmed_examples(capsys: Capture) -> None:
     code, out, _ = run(capsys, "analyze", str(CONFIG), str(RULES), "--format", "json")
     document = json.loads(out)
     assert code == cli.EXIT_OK
-    assert document["schema_version"] == 1
+    assert document["schema_version"] == 2
+    assert document["samples"] is None
     assert document["tool"] == {
         "name": "sigma-blindspot",
         "version": metadata.version("sigma-blindspot"),

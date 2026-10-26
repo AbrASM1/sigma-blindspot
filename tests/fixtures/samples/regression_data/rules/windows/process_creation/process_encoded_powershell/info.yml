@@ -1,0 +1,15 @@
+id: 6a0f3c2e-8b1d-4e7a-9c5f-3d2e1f0a9b84
+description: Hand-written regression sample for the tests
+rule_metadata:
+    - id: 2c6c4f5e-1d2b-4c7e-9a8f-0b3d5e6f7a81
+      title: Encoded PowerShell command line
+regression_tests_info:
+    - name: Positive Detection Test
+      type: evtx
+      provider: Microsoft-Windows-Sysmon
+      match_count: 1
+      path: regression_data/rules/windows/process_creation/process_encoded_powershell/2c6c4f5e-1d2b-4c7e-9a8f-0b3d5e6f7a81.evtx
+    - name: Security log sample, not Sysmon
+      type: evtx
+      provider: Microsoft-Windows-Security-Auditing
+      path: regression_data/rules/windows/process_creation/process_encoded_powershell/missing.evtx

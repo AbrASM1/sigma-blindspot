@@ -11,7 +11,7 @@ SARIF_VERSION: Final = "2.1.0"
 SCHEMA: Final = (
     "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json"
 )
-_RULE_INDEX: Final = {Verdict.BLIND: 0, Verdict.PARTIAL: 1}
+_RULE_INDEX: Final = {Verdict.BLIND: 0, Verdict.PARTIAL: 1, Verdict.MISSED: 2}
 _RULES: Final = (
     {
         "id": str(Verdict.BLIND),
@@ -26,6 +26,15 @@ _RULES: Final = (
         "name": "PartlyBlindSigmaRule",
         "shortDescription": {
             "text": "Top-level branches of the Sigma rule can never fire under the Sysmon "
+            "configuration."
+        },
+        "defaultConfiguration": {"level": "warning"},
+    },
+    {
+        "id": str(Verdict.MISSED),
+        "name": "MissedSigmaRule",
+        "shortDescription": {
+            "text": "SigmaHQ's recorded attack for the Sigma rule is dropped by the Sysmon "
             "configuration."
         },
         "defaultConfiguration": {"level": "warning"},
@@ -52,6 +61,8 @@ def _message(proof: Proof) -> str:
             branch.label for branch in proof.branches if branch.verdict is Verdict.BLIND
         )
         return f"Some branches of Sigma rule {title} can never fire: {blind}."
+    if proof.verdict is Verdict.MISSED:
+        return f"SigmaHQ's recorded attack for Sigma rule {title} is dropped by the configuration."
     return f"Sigma rule {title} can never fire: {proof.reason}."
 
 

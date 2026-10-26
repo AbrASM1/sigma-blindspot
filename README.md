@@ -16,7 +16,7 @@ uv run sigma-blindspot doctor
 ## Usage
 
 ```console
-uv run sigma-blindspot analyze CONFIG RULES... [--format text|json|markdown|sarif] [--navigator FILE] [--fail-on-blind] [--timeout-ms N] [--jobs N]
+uv run sigma-blindspot analyze CONFIG RULES... [--format text|json|markdown|sarif] [--navigator FILE] [--fail-on-blind] [--samples DIR] [--timeout-ms N] [--jobs N]
 uv run sigma-blindspot inspect CONFIG [--html FILE]
 uv run sigma-blindspot check-event CONFIG EVENTS [--html FILE]
 ```
@@ -39,6 +39,8 @@ SKIPPED tests/fixtures/rules/linux_shell.yml "Shell started on Linux": not a Sys
 ```
 
 `BLIND` is a proof: no event that matches the rule can be logged under the configuration. `OK` is not a guarantee that real attacks are logged: it only means the rule is not provably blind, because Z3 found one event that matches the rule and is logged. Z3 is free to build values that no real attack would produce, so a real attack can still be dropped by the configuration.
+
+`--samples DIR` checks the rules against real attacks: `DIR` is a SigmaHQ checkout, whose `regression_data` holds Windows events recorded during the attack each rule detects. A rule that the prover calls `OK` or `PARTIAL` becomes `MISSED` when the configuration drops every recorded event that matches it, with the configuration lines responsible.
 
 `check-event` emulates the configuration on exported events.
 
@@ -77,6 +79,6 @@ events.jsonl:4: EventID 22 UNKNOWN no filter for this event type, Sysmon default
 4 events: 1 logged, 2 dropped, 1 unknown
 ```
 
-Exit codes: `0` success, `1` a `BLIND` or `PARTIAL` rule with `--fail-on-blind`, a failed `doctor` check or output closed early, `2` invalid input. Verdicts, encodings, implemented Sysmon semantics and known limitations: `docs/reference.md`.
+Exit codes: `0` success, `1` a `BLIND`, `MISSED` or `PARTIAL` rule with `--fail-on-blind`, a failed `doctor` check or output closed early, `2` invalid input. Verdicts, encodings, implemented Sysmon semantics and known limitations: `docs/reference.md`.
 
 Not supported yet: regular expressions, CIDR ranges and null values in Sigma rules, a check of field names against the Sysmon schema, a PyPI release.

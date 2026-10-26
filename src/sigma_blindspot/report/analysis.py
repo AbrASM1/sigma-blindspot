@@ -4,7 +4,14 @@ from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from typing import Final
 
-from sigma_blindspot.prover.prove import BranchProof, Example, Finding, Proof, Verdict
+from sigma_blindspot.prover.prove import (
+    BranchProof,
+    Example,
+    Finding,
+    Proof,
+    Recorded,
+    Verdict,
+)
 from sigma_blindspot.sigma.ir import Skipped
 from sigma_blindspot.sysmon.model import Lines
 
@@ -17,13 +24,15 @@ class Analysis:
     config_source: str
     config_sha256: str
     results: tuple[Result, ...]
+    samples: str | None = None
 
 
-SCHEMA_VERSION: Final = 1
+SCHEMA_VERSION: Final = 2
 SKIPPED: Final = "SKIPPED"
-FAILING: Final = frozenset({Verdict.BLIND, Verdict.PARTIAL})
+FAILING: Final = frozenset({Verdict.BLIND, Verdict.MISSED, Verdict.PARTIAL})
 ORDER: Final = (
     Verdict.BLIND,
+    Verdict.MISSED,
     Verdict.PARTIAL,
     Verdict.RULE_UNSAT,
     Verdict.UNKNOWN,
@@ -53,9 +62,13 @@ def ordered(results: Sequence[Result]) -> list[Result]:
     return [result for _, result in sorted(enumerate(results), key=_rank)]
 
 
-def counts(results: Sequence[Result]) -> dict[str, int]:
+def shown(samples: bool) -> tuple[str, ...]:
+    return ORDER if samples else tuple(verdict for verdict in ORDER if verdict != Verdict.MISSED)
+
+
+def counts(results: Sequence[Result], samples: bool = False) -> dict[str, int]:
     found = Counter(map(verdict_of, results))
-    return {str(verdict): found[verdict] for verdict in ORDER}
+    return {str(verdict): found[verdict] for verdict in shown(samples)}
 
 
 def failing(results: Sequence[Result]) -> list[Proof]:
@@ -93,7 +106,8 @@ def text_lines(analysis: Analysis) -> Iterator[str]:
             f"{result.verdict} {result.rule.source}{named} {result.rule.category} ({ids}): "
             f"{result.reason}{where}"
         )
-    total = ", ".join(f"{count} {verdict}" for verdict, count in counts(results).items())
+    found = counts(results, analysis.samples is not None)
+    total = ", ".join(f"{count} {verdict}" for verdict, count in found.items())
     yield f"{len(results)} rules: {total}"
 
 
@@ -110,6 +124,15 @@ def _finding(finding: Finding) -> dict[str, object]:
         "reason": finding.reason,
         "lines": list(finding.lines),
         "example": _example(finding.example),
+    }
+
+
+def _recorded(item: Recorded) -> dict[str, object]:
+    return {
+        "source": item.source,
+        "event_id": item.event_id,
+        "reason": item.reason,
+        "lines": list(item.lines),
     }
 
 
@@ -142,6 +165,7 @@ def _entry(result: Result) -> dict[str, object]:
         "lines": list(result.lines),
         "example": _example(result.example),
         "branches": [_branch(branch) for branch in result.branches],
+        "recorded": [_recorded(item) for item in result.recorded],
     }
 
 
@@ -150,7 +174,8 @@ def json_document(analysis: Analysis) -> str:
         "schema_version": SCHEMA_VERSION,
         "tool": {"name": "sigma-blindspot", "version": analysis.version},
         "config": {"source": analysis.config_source, "sha256": analysis.config_sha256},
-        "summary": counts(analysis.results),
+        "samples": analysis.samples,
+        "summary": counts(analysis.results, analysis.samples is not None),
         "results": [_entry(result) for result in ordered(analysis.results)],
     }
     return json.dumps(document, indent=2, ensure_ascii=True)

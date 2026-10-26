@@ -3,7 +3,14 @@ from collections.abc import Iterator, Sequence
 from typing import Final
 
 from sigma_blindspot.prover.prove import Proof
-from sigma_blindspot.report.analysis import Analysis, Result, counts, rules_by_line
+from sigma_blindspot.report.analysis import (
+    FAILING,
+    Analysis,
+    Result,
+    counts,
+    rules_by_line,
+    shown,
+)
 
 _SPECIAL: Final = re.compile(r"([\\`*_\[\]<>&|~$])")
 _BREAKS: Final = re.compile(r"[\r\n]+")
@@ -30,10 +37,14 @@ def _row(proof: Proof) -> str:
     return "| " + " | ".join(cells) + " |"
 
 
-def _summary(results: Sequence[Result]) -> Iterator[str]:
+def _listed(names: Sequence[str]) -> str:
+    return names[0] if len(names) == 1 else f"{', '.join(names[:-1])} and {names[-1]}"
+
+
+def _summary(results: Sequence[Result], samples: bool) -> Iterator[str]:
     yield "| Verdict | Rules |"
     yield "| --- | --- |"
-    for verdict, count in counts(results).items():
+    for verdict, count in counts(results, samples).items():
         yield f"| {verdict} | {count} |"
     yield f"| Total | {len(results)} |"
 
@@ -46,9 +57,11 @@ def markdown_lines(analysis: Analysis) -> Iterator[str]:
     yield f"- SHA-256: {analysis.config_sha256}"
     yield f"- sigma-blindspot {escape(analysis.version)}"
     yield ""
-    yield from _summary(analysis.results)
+    samples = analysis.samples is not None
+    failing = [verdict for verdict in shown(samples) if verdict in FAILING]
+    yield from _summary(analysis.results, samples)
     yield ""
-    yield "## BLIND and PARTIAL rules by configuration line"
+    yield f"## {_listed(failing)} rules by configuration line"
     groups = rules_by_line(analysis.results)
     if not groups:
         yield ""

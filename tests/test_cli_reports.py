@@ -213,7 +213,7 @@ def test_sarif_reports_blind_and_partial_rules_at_their_config_lines(capsys: Cap
     (run_,) = document["runs"]
     driver = run_["tool"]["driver"]
     assert (driver["name"], driver["version"]) == ("sigma-blindspot", VERSION)
-    assert [item["id"] for item in driver["rules"]] == ["BLIND", "PARTIAL"]
+    assert [item["id"] for item in driver["rules"]] == ["BLIND", "PARTIAL", "MISSED"]
     config = artifact_uri(str(CONFIG))
     assert run_["artifacts"] == [
         {

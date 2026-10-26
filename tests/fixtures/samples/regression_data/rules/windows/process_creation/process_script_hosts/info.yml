@@ -1,0 +1,11 @@
+id: 7b1a4d3f-9c2e-4f8b-8d6a-4e3f2a1b0c95
+description: Hand-written regression sample for the tests
+rule_metadata:
+    - id: 4b8d2e6f-3a1c-4d5e-9f7a-2c3d4e5f6a73
+      title: Script host or service host started
+regression_tests_info:
+    - name: Positive Detection Test
+      type: evtx
+      provider: Microsoft-Windows-Sysmon
+      match_count: 1
+      path: regression_data/rules/windows/process_creation/process_script_hosts/4b8d2e6f-3a1c-4d5e-9f7a-2c3d4e5f6a73.evtx
