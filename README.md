@@ -33,10 +33,12 @@ PARTIAL tests/fixtures/rules/process_script_hosts.yml "Script host or service ho
 RULE_UNSAT tests/fixtures/rules/process_contradiction.yml "Image that is both cmd and powershell" process_creation (1): the rule contradicts itself
 UNKNOWN tests/fixtures/rules/process_access_lsass.yml "Process opened LSASS" process_access (10): Sysmon default unverified (probe P1)
 UNKNOWN tests/fixtures/rules/process_regex.yml "Random looking executable name" process_creation (1): unsupported: regular expression (re)
-OK tests/fixtures/rules/process_encoded_powershell.yml "Encoded PowerShell command line" process_creation (1): an event can match the rule and be logged
+OK tests/fixtures/rules/process_encoded_powershell.yml "Encoded PowerShell command line" process_creation (1): not provably blind: the example event, found by Z3, matches the rule and is logged
 SKIPPED tests/fixtures/rules/linux_shell.yml "Shell started on Linux": not a Sysmon log source
 10 rules: 4 BLIND, 1 PARTIAL, 1 RULE_UNSAT, 2 UNKNOWN, 1 OK, 1 SKIPPED
 ```
+
+`BLIND` is a proof: no event that matches the rule can be logged under the configuration. `OK` is not a guarantee that real attacks are logged: it only means the rule is not provably blind, because Z3 found one event that matches the rule and is logged. Z3 is free to build values that no real attack would produce, so a real attack can still be dropped by the configuration.
 
 `check-event` emulates the configuration on exported events.
 

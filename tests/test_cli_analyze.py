@@ -59,7 +59,8 @@ def test_analyze_prints_one_verdict_per_rule_sorted_by_verdict(capsys: Capture) 
         f'UNKNOWN {rule("process_regex.yml")} "Random looking executable name" '
         "process_creation (1): unsupported: regular expression (re)",
         f'OK {rule("process_encoded_powershell.yml")} "Encoded PowerShell command line" '
-        "process_creation (1): an event can match the rule and be logged",
+        "process_creation (1): not provably blind: the example event, found by Z3, matches the "
+        "rule and is logged",
         f'SKIPPED {rule("linux_shell.yml")} "Shell started on Linux": not a Sysmon log source',
         "10 rules: 4 BLIND, 1 PARTIAL, 1 RULE_UNSAT, 2 UNKNOWN, 1 OK, 1 SKIPPED",
     ]

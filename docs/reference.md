@@ -88,7 +88,7 @@ match the rule and still be logged by the configuration.
 
 | Verdict | Meaning |
 | --- | --- |
-| `OK` | An event can match the rule and be logged. The example event shown was found by Z3 and confirmed by the emulator (logged) and the Sigma evaluator (matches). |
+| `OK` | The rule is not provably blind: Z3 found an example event that matches the rule and is logged, confirmed by the emulator (logged) and the Sigma evaluator (matches). It is not a guarantee that real attacks are logged. |
 | `PARTIAL` | `OK`, but some top-level OR branches of the rule can never fire. They are listed with the configuration lines responsible. |
 | `BLIND` | No event can match the rule and be logged: Z3 proved it, or the event types are not logged at all. The configuration lines come from a minimized unsatisfiable core. |
 | `RULE_UNSAT` | The rule contradicts itself, whatever the configuration. |
@@ -98,6 +98,12 @@ match the rule and still be logged by the configuration.
 Per event ID, `DISABLED` means the event type is not logged at all: not logged without a filter,
 or dropped entirely by the configuration. A rule is `BLIND` when every event ID is `BLIND`,
 `DISABLED` or `RULE_UNSAT`, and `OK` when at least one is `OK`.
+
+`BLIND` is a proof; `OK` is not a guarantee that real attacks are logged. `BLIND` holds for every
+possible event, within the assumptions listed in "Sysmon semantics implemented". `OK` only shows
+one event that matches the rule and is logged, and Z3 is free to build values that no real attack
+would produce: a path, a command line or a file name that an attacker would never use. A real
+attack matching an `OK` rule can still be dropped by the configuration.
 
 How the verdicts are computed:
 

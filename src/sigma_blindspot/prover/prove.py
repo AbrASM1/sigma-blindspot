@@ -36,7 +36,7 @@ class Verdict(StrEnum):
 
 
 class Why(StrEnum):
-    MATCHES = "an event can match the rule and be logged"
+    MATCHES = "not provably blind: the example event, found by Z3, matches the rule and is logged"
     DROPPED = "every matching event is dropped by the config"
     DROPS_ALL = "the config drops every event of this type"
     CONTRADICTION = "the rule contradicts itself"
