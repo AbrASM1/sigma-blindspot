@@ -101,12 +101,17 @@ def test_an_event_type_logged_by_default_lets_the_rule_fire() -> None:
     assert proof.example.event_id == 5
 
 
-def test_an_unverified_default_gives_unknown() -> None:
+def test_an_event_type_not_logged_by_default_makes_the_rule_blind() -> None:
     proof = proof_of("sel:\n  GrantedAccess: '0x1fffff'\ncondition: sel\n", "process_access")
     assert (proof.verdict, proof.reason) == (
-        Verdict.UNKNOWN,
-        "Sysmon default unverified (probe P1)",
+        Verdict.BLIND,
+        "ProcessAccess (10) is not logged without a filter",
     )
+
+
+def test_an_unverified_default_gives_unknown() -> None:
+    proof = proof_of("sel:\n  ImageLoaded|endswith: '.sys'\ncondition: sel\n", "driver_load")
+    assert (proof.verdict, proof.reason) == (Verdict.UNKNOWN, "Sysmon default unverified")
 
 
 def test_an_unsupported_construct_gives_unknown_unless_the_type_is_off() -> None:

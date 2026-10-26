@@ -37,7 +37,7 @@ def test_blinding_lines_rank_config_lines_and_skip_rules_without_one(
 def test_summary_counts_verdicts_and_shows_the_blinding_elements(results: list[Result]) -> None:
     lines = summarize("fixture", TEXT, results, 1.4).splitlines()
     assert lines[:3] == ["## fixture", "", "10 rules analysed in 1 s."]
-    assert "| BLIND | 4 |" in lines
+    assert "| BLIND | 5 |" in lines
     element = escape('<ParentImage condition="end with">\\ccmexec.exe</ParentImage>')
     assert f"| {line_of(TEXT, 'ccmexec.exe')} | 1 | {element} |" in lines
 

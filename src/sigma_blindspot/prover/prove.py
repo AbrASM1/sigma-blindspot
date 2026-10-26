@@ -42,7 +42,7 @@ class Why(StrEnum):
     DROPS_ALL = "the config drops every event of this type"
     CONTRADICTION = "the rule contradicts itself"
     UNCONFIRMED = "model could not be confirmed"
-    UNVERIFIED_DEFAULT = "Sysmon default unverified (probe P1)"
+    UNVERIFIED_DEFAULT = "Sysmon default unverified"
 
 
 _CANNOT_FIRE: Final = frozenset({Verdict.BLIND, Verdict.DISABLED, Verdict.RULE_UNSAT})

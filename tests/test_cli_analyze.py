@@ -48,21 +48,21 @@ def test_analyze_prints_one_verdict_per_rule_sorted_by_verdict(capsys: Capture) 
         "ImageLoad (7) is not logged without a filter",
         f'BLIND {rule("network_smb_outbound.yml")} "Outbound SMB from rundll32" '
         f"network_connection (3): {DROPPED} ({at('<NetworkConnect')})",
+        f'BLIND {rule("process_access_lsass.yml")} "Process opened LSASS" process_access '
+        "(10): ProcessAccess (10) is not logged without a filter",
         f'BLIND {rule("process_ccmexec_child.yml")} "Child process of the SCCM client" '
         f"process_creation (1): {DROPPED} ({at('ccmexec.exe')})",
         f'PARTIAL {rule("process_script_hosts.yml")} "Script host or service host started" '
         f"process_creation (1): never fires: #1 selection_svchost ({at('svchost.exe')})",
         f'RULE_UNSAT {rule("process_contradiction.yml")} "Image that is both cmd and '
         'powershell" process_creation (1): the rule contradicts itself',
-        f'UNKNOWN {rule("process_access_lsass.yml")} "Process opened LSASS" process_access '
-        "(10): Sysmon default unverified (probe P1)",
         f'UNKNOWN {rule("process_regex.yml")} "Random looking executable name" '
         "process_creation (1): unsupported: regular expression (re)",
         f'OK {rule("process_encoded_powershell.yml")} "Encoded PowerShell command line" '
         "process_creation (1): not provably blind: the example event, found by Z3, matches the "
         "rule and is logged",
         f'SKIPPED {rule("linux_shell.yml")} "Shell started on Linux": not a Sysmon log source',
-        "10 rules: 4 BLIND, 1 PARTIAL, 1 RULE_UNSAT, 2 UNKNOWN, 1 OK, 1 SKIPPED",
+        "10 rules: 5 BLIND, 1 PARTIAL, 1 RULE_UNSAT, 1 UNKNOWN, 1 OK, 1 SKIPPED",
     ]
 
 
@@ -81,10 +81,10 @@ def test_analyze_writes_json_with_confirmed_examples(capsys: Capture) -> None:
         "sha256": hashlib.sha256(CONFIG.read_bytes()).hexdigest(),
     }
     assert document["summary"] == {
-        "BLIND": 4,
+        "BLIND": 5,
         "PARTIAL": 1,
         "RULE_UNSAT": 1,
-        "UNKNOWN": 2,
+        "UNKNOWN": 1,
         "OK": 1,
         "SKIPPED": 1,
     }

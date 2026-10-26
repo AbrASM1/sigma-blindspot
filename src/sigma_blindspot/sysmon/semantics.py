@@ -38,6 +38,13 @@ class Semantic(Enum):
         "Without a filter, ProcessCreate (1) and ProcessTerminate (5) are logged "
         "(probe P1, Sysmon 15.22)",
     )
+    NOT_LOGGED_BY_DEFAULT = (
+        Status.VERIFIED,
+        "Without a filter, FileCreateTime (2), ProcessAccess (10), FileCreate (11), "
+        "RegistryEvent (12, 13, 14), FileCreateStreamHash (15), PipeEvent (17, 18), "
+        "DnsQuery (22), FileDelete (23) and FileExecutableDetected (29) are not logged "
+        "(probes P1 and P1 control, Sysmon 15.22)",
+    )
     CONDITION_NAME_CASE = (
         Status.ASSUMED,
         "Condition names ignore ASCII case: `Contains` is `contains`",

@@ -29,6 +29,16 @@ SCRIPT_HOSTS = RULES / "process_script_hosts.yml"
 SCRIPT_HOSTS_ID = "4b8d2e6f-3a1c-4d5e-9f7a-2c3d4e5f6a73"
 PROCESS_CREATION = SAMPLES / "regression_data" / "rules" / "windows" / "process_creation"
 CCMEXEC = "C:\\Windows\\CCM\\CcmExec.exe"
+DRIVER = """title: Driver loaded from a Temp folder
+id: 3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f
+logsource:
+    category: driver_load
+    product: windows
+detection:
+    selection:
+        ImageLoaded|contains: '\\Temp\\'
+    condition: selection
+"""
 ENCODED = {
     "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
     "CommandLine": "powershell.exe -enc SQBFAFgA",
@@ -128,9 +138,9 @@ def test_samples_without_a_matching_event_keep_the_verdict(tmp_path: Path) -> No
     ("rule", "event_id", "fields"),
     [
         pytest.param(
-            "process_access_lsass.yml",
-            10,
-            {"TargetImage": "C:\\Windows\\System32\\lsass.exe", "GrantedAccess": "0x1010"},
+            None,
+            6,
+            {"ImageLoaded": "C:\\Windows\\Temp\\x.sys"},
             id="unknown-decision",
         ),
         pytest.param(
@@ -142,9 +152,11 @@ def test_samples_without_a_matching_event_keep_the_verdict(tmp_path: Path) -> No
     ],
 )
 def test_an_undecided_sample_never_makes_a_rule_missed(
-    tmp_path: Path, rule: str, event_id: int, fields: dict[str, str]
+    tmp_path: Path, rule: str | None, event_id: int, fields: dict[str, str]
 ) -> None:
-    path = RULES / rule
+    path = tmp_path / "driver.yml" if rule is None else RULES / rule
+    if rule is None:
+        path.write_text(DRIVER, encoding="utf-8")
     proof = Prover(load_config(CONFIG)).prove(loaded(path))
     assert proof.verdict is Verdict.UNKNOWN
     root = regression(tmp_path, str(loaded(path).rule_id), (event_id, fields))
@@ -164,14 +176,14 @@ def test_analyze_with_samples_prints_missed_rules(capsys: Capture) -> None:
     assert (code, err) == (cli.EXIT_OK, "")
     lines = out.splitlines()
     where = f"({CONFIG}:{at('ccmexec.exe')})"
-    assert lines[4:6] == [
+    assert lines[5:7] == [
         f'MISSED {POWERSHELL} "Encoded PowerShell command line" process_creation (1): '
         f"{DROPPED} {where}",
         f'MISSED {SCRIPT_HOSTS} "Script host or service host started" process_creation (1): '
         f"{DROPPED} {where}",
     ]
     assert lines[-1] == (
-        "10 rules: 4 BLIND, 2 MISSED, 0 PARTIAL, 1 RULE_UNSAT, 2 UNKNOWN, 0 OK, 1 SKIPPED"
+        "10 rules: 5 BLIND, 2 MISSED, 0 PARTIAL, 1 RULE_UNSAT, 1 UNKNOWN, 0 OK, 1 SKIPPED"
     )
 
 

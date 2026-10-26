@@ -106,12 +106,25 @@ class Default(StrEnum):
     UNKNOWN = "unknown"
 
 
-_NOT_LOGGED_WITHOUT_FILTER: Final = frozenset({EventTag.NETWORK_CONNECT, EventTag.IMAGE_LOAD})
+_DISABLED_BY_DEFAULT: Final = frozenset({EventTag.NETWORK_CONNECT, EventTag.IMAGE_LOAD})
 _LOGGED_WITHOUT_FILTER: Final = frozenset({EventTag.PROCESS_CREATE, EventTag.PROCESS_TERMINATE})
+_NOT_LOGGED_WITHOUT_FILTER: Final = frozenset(
+    {
+        EventTag.FILE_CREATE_TIME,
+        EventTag.PROCESS_ACCESS,
+        EventTag.FILE_CREATE,
+        EventTag.REGISTRY_EVENT,
+        EventTag.FILE_CREATE_STREAM_HASH,
+        EventTag.PIPE_EVENT,
+        EventTag.DNS_QUERY,
+        EventTag.FILE_DELETE,
+        EventTag.FILE_EXECUTABLE_DETECTED,
+    }
+)
 
 
-@assumes(Semantic.LOGGED_BY_DEFAULT)
+@assumes(Semantic.LOGGED_BY_DEFAULT, Semantic.NOT_LOGGED_BY_DEFAULT)
 def default_without_filter(tag: EventTag) -> Default:
-    if tag in _NOT_LOGGED_WITHOUT_FILTER:
+    if tag in _DISABLED_BY_DEFAULT or tag in _NOT_LOGGED_WITHOUT_FILTER:
         return Default.NOT_LOGGED
     return Default.LOGGED if tag in _LOGGED_WITHOUT_FILTER else Default.UNKNOWN

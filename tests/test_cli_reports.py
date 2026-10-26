@@ -117,10 +117,10 @@ def test_markdown_groups_blind_and_partial_rules_by_config_line(capsys: Capture)
         "",
         "| Verdict | Rules |",
         "| --- | --- |",
-        "| BLIND | 4 |",
+        "| BLIND | 5 |",
         "| PARTIAL | 1 |",
         "| RULE_UNSAT | 1 |",
-        "| UNKNOWN | 2 |",
+        "| UNKNOWN | 1 |",
         "| OK | 1 |",
         "| SKIPPED | 1 |",
         "| Total | 10 |",
@@ -145,8 +145,11 @@ def test_markdown_groups_blind_and_partial_rules_by_config_line(capsys: Capture)
             [("BLIND", escape(str(rule("file_vbs_dropped.yml"))))],
         ),
         (
-            "No configuration line, 1 rule",
-            [("BLIND", escape(str(rule("image_load_dbghelp.yml"))))],
+            "No configuration line, 2 rules",
+            [
+                ("BLIND", escape(str(rule("image_load_dbghelp.yml")))),
+                ("BLIND", escape(str(rule("process_access_lsass.yml")))),
+            ],
         ),
     ]
 
@@ -229,6 +232,7 @@ def test_sarif_reports_blind_and_partial_rules_at_their_config_lines(capsys: Cap
         ("BLIND", 0, config, line("<FileCreate"), rule_file("file_vbs_dropped.yml")),
         ("BLIND", 0, config, None, rule_file("image_load_dbghelp.yml")),
         ("BLIND", 0, config, line("<NetworkConnect"), rule_file("network_smb_outbound.yml")),
+        ("BLIND", 0, config, None, rule_file("process_access_lsass.yml")),
         ("BLIND", 0, config, line("ccmexec.exe"), rule_file("process_ccmexec_child.yml")),
         ("PARTIAL", 1, config, line("svchost.exe"), rule_file("process_script_hosts.yml")),
     ]
@@ -274,6 +278,14 @@ def test_navigator_layer_marks_techniques_whose_rules_are_all_blind(
     assert [
         (item["techniqueID"], item["comment"], item["metadata"]) for item in layer["techniques"]
     ] == [
+        (
+            "T1003.001",
+            "All 2 analysed rules are BLIND",
+            [
+                {"name": "Debug help library loaded", "value": str(rule("image_load_dbghelp.yml"))},
+                {"name": "Process opened LSASS", "value": str(rule("process_access_lsass.yml"))},
+            ],
+        ),
         (
             "T1021.002",
             "The only analysed rule is BLIND",

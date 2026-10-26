@@ -41,9 +41,20 @@ def test_sigma_categories_map_to_known_event_ids() -> None:
 def test_only_documented_or_probed_defaults_are_decided() -> None:
     defaults = {tag: default_without_filter(tag) for tag in EventTag}
     decided = {tag: default for tag, default in defaults.items() if default is not Default.UNKNOWN}
+    logged = {EventTag.PROCESS_CREATE, EventTag.PROCESS_TERMINATE}
+    unknown = {
+        EventTag.DRIVER_LOAD,
+        EventTag.CREATE_REMOTE_THREAD,
+        EventTag.RAW_ACCESS_READ,
+        EventTag.WMI_EVENT,
+        EventTag.CLIPBOARD_CHANGE,
+        EventTag.PROCESS_TAMPERING,
+        EventTag.FILE_DELETE_DETECTED,
+        EventTag.FILE_BLOCK_EXECUTABLE,
+        EventTag.FILE_BLOCK_SHREDDING,
+    }
     assert decided == {
-        EventTag.PROCESS_CREATE: Default.LOGGED,
-        EventTag.PROCESS_TERMINATE: Default.LOGGED,
-        EventTag.NETWORK_CONNECT: Default.NOT_LOGGED,
-        EventTag.IMAGE_LOAD: Default.NOT_LOGGED,
+        tag: Default.LOGGED if tag in logged else Default.NOT_LOGGED
+        for tag in EventTag
+        if tag not in unknown
     }

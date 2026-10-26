@@ -155,7 +155,8 @@ CASES: list[Case] = [
         ('<NetworkConnect onmatch="include"',),
     ),
     (DOC_SAMPLE, 1, {"Image": "C:\\x.exe"}, True, Reason.LOGGED_BY_DEFAULT, ()),
-    (DOC_SAMPLE, 22, {"QueryName": "a.org"}, None, Reason.UNVERIFIED_DEFAULT, ()),
+    (DOC_SAMPLE, 22, {"QueryName": "a.org"}, False, Reason.NOT_LOGGED_BY_DEFAULT, ()),
+    (DOC_SAMPLE, 8, {"TargetImage": "lsass.exe"}, None, Reason.UNVERIFIED_DEFAULT, ()),
     (DOC_SAMPLE, 7, {"ImageLoaded": "C:\\x.dll"}, False, Reason.NOT_LOGGED_BY_DEFAULT, ()),
     (DOC_SAMPLE, 4, {}, True, Reason.UNFILTERABLE, ()),
     (
@@ -178,7 +179,7 @@ CASES: list[Case] = [
     (DOC_RULE_GROUPS, 5, {"Image": "TIMEOUT.EXE"}, True, Reason.INCLUDED, ('"terminate"',)),
     (DOC_RULE_GROUPS, 5, {"Image": "notepad.exe"}, False, Reason.NOT_INCLUDED, ("<ProcessT",)),
     (DOC_RULE_GROUPS, 7, {"ImageLoaded": "a.dll"}, False, Reason.NOT_INCLUDED, ("<ImageLoad",)),
-    (DOC_RULE_GROUPS, 11, {"TargetFilename": "a"}, None, Reason.UNVERIFIED_DEFAULT, ()),
+    (DOC_RULE_GROUPS, 11, {"TargetFilename": "a"}, False, Reason.NOT_LOGGED_BY_DEFAULT, ()),
     (
         LEGACY,
         1,

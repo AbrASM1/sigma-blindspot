@@ -81,8 +81,8 @@ def header(timeout_ms: int, jobs: int) -> str:
             "Method: `analyze` on every configuration with the same rules. A `BLIND` rule can",
             "never fire because of what the configuration does not log. For an include-only",
             "configuration, that is what it accepts not to see to reduce noise, not a defect.",
-            "`UNKNOWN` covers unsupported Sigma constructs, Sysmon defaults not verified by lab",
-            "probe P1, and Z3 timeouts. Every assumption is listed in `docs/reference.md`.",
+            "`UNKNOWN` covers unsupported Sigma constructs, Sysmon defaults not verified by a lab",
+            "probe, and Z3 timeouts. Every assumption is listed in `docs/reference.md`.",
             "",
         ]
     )
