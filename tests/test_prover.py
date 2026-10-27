@@ -181,7 +181,7 @@ def test_z3_giving_up_gives_unknown(monkeypatch: pytest.MonkeyPatch) -> None:
 complete_events = st.builds(
     Event,
     event_id=st.sampled_from((1, 12, 13, 14)),
-    fields=st.fixed_dictionaries({name: texts for name in FIELDS}),
+    fields=st.fixed_dictionaries(dict.fromkeys(FIELDS, texts)),
 )
 
 

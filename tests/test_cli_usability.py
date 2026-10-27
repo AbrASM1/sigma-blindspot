@@ -254,5 +254,5 @@ def test_prove_all_reports_progress_for_every_rule(jobs: int) -> None:
     config = load_config(CONFIG)
     rules = [item for item in load_rules([RULES]) if isinstance(item, LoadedRule)]
     seen: list[int] = []
-    proofs = prove_all(config, CONFIG.read_bytes(), rules, 2000, jobs, seen.append)
+    proofs = prove_all(config, CONFIG.read_bytes(), rules, 2000, jobs, progress=seen.append)
     assert seen == list(range(1, len(rules) + 1)) and len(proofs) == len(rules)

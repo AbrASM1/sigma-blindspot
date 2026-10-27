@@ -19,7 +19,7 @@ representable = st.text(st.characters(max_codepoint=MAX_CHAR, exclude_categories
 complete_events = st.builds(
     Event,
     event_id=st.sampled_from((1, 12, 13)),
-    fields=st.fixed_dictionaries({name: texts for name in FIELDS}),
+    fields=st.fixed_dictionaries(dict.fromkeys(FIELDS, texts)),
 )
 
 

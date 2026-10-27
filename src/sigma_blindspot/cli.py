@@ -227,7 +227,7 @@ def _analyze(arguments: argparse.Namespace) -> int:
     progress = _progress(len(rules))
     try:
         update = None if progress is None else progress.update
-        proofs = prove_all(config, data, rules, arguments.timeout_ms, jobs, update)
+        proofs = prove_all(config, data, rules, arguments.timeout_ms, jobs, progress=update)
     finally:
         if progress is not None:
             progress.clear()

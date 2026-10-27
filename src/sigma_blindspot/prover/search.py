@@ -156,7 +156,7 @@ def _candidates(kept: Sequence[Pattern]) -> Iterator[str]:
     yield _FILLER
 
 
-def quick_witness(literals: Sequence[Literal]) -> str | None | Undecided:
+def quick_witness(literals: Sequence[Literal]) -> str | Undecided | None:
     def fits(text: str) -> bool:
         folded = not any("A" <= character <= "Z" for character in text)
         return folded and all(

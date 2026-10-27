@@ -44,6 +44,7 @@ def prove_all(
     rules: Sequence[LoadedRule],
     timeout_ms: int,
     jobs: int,
+    *,
     progress: Progress | None = None,
 ) -> tuple[Proof, ...]:
     if jobs == 1 or len(rules) < 2:
