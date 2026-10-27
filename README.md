@@ -95,10 +95,10 @@ Not supported yet: regular expressions, CIDR ranges and null values in Sigma rul
 
 | Configuration | BLIND | PARTIAL | UNKNOWN | OK | SKIPPED |
 | --- | --- | --- | --- | --- | --- |
-| SwiftOnSecurity | 142 | 0 | 120 | 1609 | 549 |
+| SwiftOnSecurity | 142 | 0 | 119 | 1610 | 549 |
 | Neo23x0 | 21 | 0 | 129 | 1721 | 549 |
 | Neo23x0 block | 21 | 0 | 129 | 1721 | 549 |
 | sysmon-modular | 16 | 1 | 137 | 1717 | 549 |
 | sysmon-modular excludes-only | 25 | 1 | 128 | 1717 | 549 |
 
-A `BLIND` rule shows what a configuration accepts not to see, usually to keep the volume of events down; it is not a defect of the configuration. On SwiftOnSecurity, 100 of the 142 `BLIND` rules come from one line, the `ImageLoad` include filter. [`bench/results.md`](bench/results.md) lists the lines responsible for each configuration, the versions and the method. Reproduce it with `uv run python scripts/benchmark.py --jobs 4` (network access, about three minutes).
+A `BLIND` rule shows what a configuration accepts not to see, usually to keep the volume of events down; it is not a defect of the configuration. On SwiftOnSecurity, 100 of the 142 `BLIND` rules come from one line, the `ImageLoad` include filter, which the configuration leaves empty on purpose so that no image load is logged. [`bench/results.md`](bench/results.md) lists the lines responsible for each configuration, the versions and the method. Reproduce it with `uv run python scripts/benchmark.py --jobs 4` (network access, about three minutes).
