@@ -1,6 +1,6 @@
 [project]
 name = "sigma-blindspot"
-version = "0.2.0"
+version = "0.3.0"
 description = "Static analyzer that proves which Sigma rules can never fire under a given Sysmon configuration."
 readme = "README.md"
 license = "MIT"
