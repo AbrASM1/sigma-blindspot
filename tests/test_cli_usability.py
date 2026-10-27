@@ -50,19 +50,24 @@ def test_every_command_has_a_description_and_powershell_examples(
     assert f"sigma-blindspot {command}" in out.split("(PowerShell)", 1)[1]
 
 
-def test_help_without_a_command_shows_the_overview(capsys: Capture) -> None:
+@pytest.mark.parametrize("columns", ["60", "200"])
+def test_help_without_a_command_shows_the_overview(
+    capsys: Capture, monkeypatch: pytest.MonkeyPatch, columns: str
+) -> None:
+    monkeypatch.setenv("COLUMNS", columns)
     code, out, _ = run(capsys, "help")
     assert code == cli.EXIT_OK
     assert "Getting started (PowerShell):" in out and "help COMMAND" in out
     commands = out.split("commands:\n", 1)[1].split("\n\n", 1)[0].splitlines()
-    assert [line.split()[0] for line in commands] == [
+    named = [line for line in commands if line[2] != " "]
+    assert [line.split()[0] for line in named] == [
         "doctor",
         "inspect",
         "check-event",
         "analyze",
         "help",
     ]
-    assert all(line.startswith("  ") and line[2] != " " for line in commands)
+    assert all(line.startswith("  ") for line in commands)
 
 
 def test_analyze_help_explains_every_verdict_and_exit_code(capsys: Capture) -> None:
