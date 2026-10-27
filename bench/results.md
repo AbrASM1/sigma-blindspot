@@ -23,15 +23,15 @@ for an event type without a filter comes from lab probes on Sysmon 15.22
 
 ## swiftonsecurity
 
-2420 rules analysed in 15 s.
+2420 rules analysed in 14 s.
 
 | Verdict | Rules |
 | --- | --- |
 | BLIND | 142 |
 | PARTIAL | 0 |
 | RULE_UNSAT | 0 |
-| UNKNOWN | 67 |
-| OK | 1662 |
+| UNKNOWN | 65 |
+| OK | 1664 |
 | SKIPPED | 549 |
 
 Configuration lines that make the most rules `BLIND` or `PARTIAL`:
@@ -50,15 +50,15 @@ Rules `BLIND` or `PARTIAL` without a configuration line, because their event typ
 
 ## neo23x0
 
-2420 rules analysed in 17 s.
+2420 rules analysed in 16 s.
 
 | Verdict | Rules |
 | --- | --- |
 | BLIND | 22 |
 | PARTIAL | 0 |
 | RULE_UNSAT | 0 |
-| UNKNOWN | 69 |
-| OK | 1780 |
+| UNKNOWN | 66 |
+| OK | 1783 |
 | SKIPPED | 549 |
 
 Configuration lines that make the most rules `BLIND` or `PARTIAL`:
@@ -82,8 +82,8 @@ Rules `BLIND` or `PARTIAL` without a configuration line, because their event typ
 | BLIND | 22 |
 | PARTIAL | 0 |
 | RULE_UNSAT | 0 |
-| UNKNOWN | 69 |
-| OK | 1780 |
+| UNKNOWN | 66 |
+| OK | 1783 |
 | SKIPPED | 549 |
 
 Configuration lines that make the most rules `BLIND` or `PARTIAL`:
@@ -104,11 +104,11 @@ Rules `BLIND` or `PARTIAL` without a configuration line, because their event typ
 
 | Verdict | Rules |
 | --- | --- |
-| BLIND | 16 |
+| BLIND | 17 |
 | PARTIAL | 1 |
 | RULE_UNSAT | 0 |
-| UNKNOWN | 69 |
-| OK | 1785 |
+| UNKNOWN | 65 |
+| OK | 1788 |
 | SKIPPED | 549 |
 
 Configuration lines that make the most rules `BLIND` or `PARTIAL`:
@@ -118,6 +118,8 @@ Configuration lines that make the most rules `BLIND` or `PARTIAL`:
 | 97 | 1 | \<GrantedAccess\>0x1400\</GrantedAccess\> |
 | 808 | 1 | \<EventType condition="is"\>CreateKey\</EventType\> |
 | 889 | 1 | \<TargetObject condition="contains"\>\\Control\\WMI\\Autologger\\\</TargetObject\> |
+| 916 | 1 | \<TargetObject condition="begin with"\>HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WINEVT\\Publishers\\\</TargetObject\> |
+| 960 | 1 | \<RegistryEvent onmatch="include"\> |
 | 3098 | 1 | \<QueryName condition="end with"\>.microsoft.com\</QueryName\> |
 | 4241 | 1 | \<RawAccessRead onmatch="include"\> |
 
@@ -132,8 +134,8 @@ Rules `BLIND` or `PARTIAL` without a configuration line, because their event typ
 | BLIND | 25 |
 | PARTIAL | 1 |
 | RULE_UNSAT | 0 |
-| UNKNOWN | 68 |
-| OK | 1777 |
+| UNKNOWN | 65 |
+| OK | 1780 |
 | SKIPPED | 549 |
 
 Configuration lines that make the most rules `BLIND` or `PARTIAL`:
