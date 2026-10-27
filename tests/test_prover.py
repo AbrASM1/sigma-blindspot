@@ -95,6 +95,18 @@ def test_an_empty_include_disables_its_event_type() -> None:
     assert proof.reason == "the config drops every event of this type"
 
 
+def test_a_null_filter_is_decided() -> None:
+    detection = (
+        "sel:\n  Image|endswith: '\\{name}'\nfilter_null:\n  CommandLine: null\n"
+        "condition: sel and not filter_null\n"
+    )
+    logged = proof_of(detection.format(name="powershell.exe"))
+    assert logged.verdict is Verdict.OK and logged.example is not None
+    assert dict(logged.example.fields)["CommandLine"] != ""
+    dropped = proof_of(detection.format(name="cmd.exe"))
+    assert (dropped.verdict, dropped.lines) == (Verdict.BLIND, (at("cmd.exe"),))
+
+
 def test_an_event_type_logged_by_default_lets_the_rule_fire() -> None:
     proof = proof_of("sel:\n  Image|endswith: '\\x.exe'\ncondition: sel\n", "process_termination")
     assert proof.verdict is Verdict.OK and proof.example is not None

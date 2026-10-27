@@ -56,6 +56,7 @@ from sigma_blindspot.sigma.ir import (
 )
 from sigma_blindspot.sysmon.conditions import fold
 from sigma_blindspot.sysmon.events import SIGMA_CATEGORY_TO_EVENT_IDS
+from sigma_blindspot.sysmon.semantics import Semantic, assumes
 
 type Loaded = LoadedRule | Skipped
 
@@ -70,7 +71,6 @@ _UNSUPPORTED_VALUES: Final[tuple[tuple[type[SigmaType], str], ...]] = (
     (SigmaTimestampPart, "timestamp modifier"),
     (SigmaRegularExpression, "regular expression (re)"),
     (SigmaCIDRExpression, "CIDR network (cidr)"),
-    (SigmaNull, "null value"),
     (SigmaExists, "field existence (exists)"),
     (SigmaCompareExpression, "numeric comparison (lt, lte, gt, gte)"),
     (SigmaFieldReference, "field reference (fieldref)"),
@@ -114,6 +114,11 @@ def _string(field: str, value: SigmaString) -> Node:
     return Match(field, _string_pattern(tuple(parts)))
 
 
+@assumes(Semantic.NULL_IS_EMPTY)
+def _null(field: str) -> Node:
+    return Match(field, Equals(""))
+
+
 def _value(field: str, value: SigmaType) -> Node:
     reason = next((text for kind, text in _UNSUPPORTED_VALUES if isinstance(value, kind)), None)
     if reason is not None:
@@ -123,6 +128,8 @@ def _value(field: str, value: SigmaType) -> Node:
             return _string(field, value)
         case SigmaNumber():
             return Match(field, Equals(fold(str(value))))
+        case SigmaNull():
+            return _null(field)
         case SigmaExpansion():
             return _flatten(Or, (_value(field, item) for item in value.values))
     return Unsupported(f"value type {type(value).__name__}")

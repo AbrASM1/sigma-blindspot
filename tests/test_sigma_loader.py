@@ -112,7 +112,7 @@ def selection(item: str) -> str:
         pytest.param(
             "DestinationIp|cidr: '10.0.0.0/8'", Unsupported("CIDR network (cidr)"), id="cidr"
         ),
-        pytest.param("Image: null", Unsupported("null value"), id="null"),
+        pytest.param("Image: null", Match(IMAGE, Equals("")), id="null"),
         pytest.param("Image|exists: true", Unsupported("field existence (exists)"), id="exists"),
         pytest.param(
             "ProcessId|gt: 5", Unsupported("numeric comparison (lt, lte, gt, gte)"), id="compare"
@@ -144,7 +144,7 @@ def test_fields_of_a_map_combine_with_and() -> None:
             (
                 Match(IMAGE, Suffix("\\cmd.exe")),
                 Match(USER, Equals("system")),
-                Unsupported("null value"),
+                Match("ParentImage", Equals("")),
             )
         ),
     )

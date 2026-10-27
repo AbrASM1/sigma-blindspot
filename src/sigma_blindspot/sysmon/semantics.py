@@ -73,6 +73,7 @@ class Semantic(Enum):
         Status.ASSUMED,
         "Events carry every field that the config or a rule names for their type",
     )
+    NULL_IS_EMPTY = Status.ASSUMED, "A Sigma `null` value matches a field whose value is empty"
 
     def __init__(self, status: Status, behaviour: str) -> None:
         self.status = status

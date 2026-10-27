@@ -98,7 +98,9 @@ modifiers applied. The YAML is never interpreted by hand.
 - Supported: plain values, `contains`, `startswith`, `endswith`, `*` and `?` wildcards anywhere,
   `all`, `neq`, `windash`, the encoding modifiers (`base64`, `base64offset`, `wide`), and numbers,
   compared as strings. Matching is case-insensitive, and the `EventID` field is the event ID.
-- Unsupported, each with its own reason: `cased`, `re`, `cidr`, `null`, `exists`, `lt`, `lte`, `gt`,
+  `null` matches an empty value (an assumption, see "Sysmon semantics implemented"): SigmaHQ uses
+  it almost only in filters that leave out events whose field is empty.
+- Unsupported, each with its own reason: `cased`, `re`, `cidr`, `exists`, `lt`, `lte`, `gt`,
   `gte`, `fieldref`, boolean values, timestamp modifiers, `expand` placeholders and keyword
   searches.
 - A condition is split into top-level OR branches: the alternatives of its outermost `or` or
@@ -226,6 +228,7 @@ lab probe. `tests/test_semantics.py` keeps this table in sync with
 | Empty items in a `;` list are ignored | assumed |
 | Case-insensitivity follows the Unicode lower-case mapping | assumed |
 | Events carry every field that the config or a rule names for their type | assumed |
+| A Sigma `null` value matches a field whose value is empty | assumed |
 
 ## Known limitations
 

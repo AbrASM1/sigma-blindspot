@@ -87,7 +87,7 @@ events.jsonl:4: EventID 22 DROPPED no filter for this event type, not logged by 
 
 Exit codes: `0` success, `1` a `BLIND`, `MISSED` or `PARTIAL` rule with `--fail-on-blind`, a failed `doctor` check or output closed early, `2` invalid input. Verdicts, encodings, implemented Sysmon semantics and known limitations: `docs/reference.md`.
 
-Not supported yet: regular expressions, CIDR ranges and null values in Sigma rules, a check of field names against the Sysmon schema, a PyPI release.
+Not supported yet: regular expressions and CIDR ranges in Sigma rules, a check of field names against the Sysmon schema, a PyPI release.
 
 ## Benchmark
 
