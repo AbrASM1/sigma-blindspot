@@ -5,6 +5,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Final
 
+import yaml
 from sigma.collection import SigmaCollection
 from sigma.conditions import (
     ConditionAND,
@@ -60,6 +61,7 @@ type Loaded = LoadedRule | Skipped
 
 PRODUCT: Final = "windows"
 RULE_SUFFIX: Final = ".yml"
+YAML_LOADER: Final = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
 _WILDCARDS: Final[Mapping[SpecialChars, Wildcard]] = MappingProxyType(
     {SpecialChars.WILDCARD_MULTI: Wildcard.ANY, SpecialChars.WILDCARD_SINGLE: Wildcard.ONE}
 )
@@ -200,7 +202,10 @@ def _rule(source: str, rule: SigmaRule | SigmaCorrelationRule) -> Loaded:
 
 def parse_rules(data: bytes, source: str) -> tuple[Loaded, ...]:
     try:
-        collection = SigmaCollection.from_yaml(data, collect_filters=True, resolve_references=False)
+        documents = list(yaml.load_all(data, Loader=YAML_LOADER))
+        collection = SigmaCollection.from_dicts(
+            documents, collect_filters=True, resolve_references=False
+        )
     except Exception as error:
         return (Skipped(source, None, _describe(error)),)
     rules = tuple(_rule(source, rule) for rule in collection.rules)

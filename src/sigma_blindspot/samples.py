@@ -10,6 +10,7 @@ from sigma_blindspot.errors import EventError
 from sigma_blindspot.prover.prove import Proof, Recorded, Verdict
 from sigma_blindspot.sigma.evaluate import evaluate
 from sigma_blindspot.sigma.ir import LoadedRule
+from sigma_blindspot.sigma.loader import YAML_LOADER
 from sigma_blindspot.sysmon.evtx_json import SYSMON_PROVIDER, load_evtx_json
 from sigma_blindspot.sysmon.model import Event, SysmonConfig
 
@@ -31,7 +32,7 @@ type Samples = Mapping[str, tuple[Sample, ...]]
 def _document(info: Path) -> Mapping[str, object]:
     text = decode_text(info.read_bytes(), str(info), EventError)
     try:
-        document = yaml.safe_load(text)
+        document = yaml.load(text, Loader=YAML_LOADER)
     except yaml.YAMLError as error:
         mark = getattr(error, "problem_mark", None)
         line = None if mark is None else mark.line + 1
