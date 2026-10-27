@@ -20,6 +20,12 @@ def _escape(character: str) -> str:
     return f"\\u{{{ord(character):x}}}"
 
 
+def check_representable(text: str) -> None:
+    beyond = next((character for character in text if ord(character) > MAX_CHAR), None)
+    if beyond is not None:
+        _escape(beyond)
+
+
 def lit(text: str, context: Any = None) -> Any:
     return z3.StringVal("".join(map(_escape, text)), context)
 
