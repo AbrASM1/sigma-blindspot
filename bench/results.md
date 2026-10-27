@@ -1,6 +1,6 @@
 # Benchmark
 
-sigma-blindspot 0.3.0, pysigma 1.5.1, z3-solver 5.1.0.0, Python 3.12.15 on Windows-11-10.0.26200-SP0, 4 worker processes, 2000 ms per Z3 check.
+sigma-blindspot 0.4.0, pysigma 1.5.1, z3-solver 5.1.0.0, Python 3.12.15 on Windows-11-10.0.26200-SP0, 4 worker processes, 2000 ms per Z3 check.
 
 Rules: SigmaHQ `rules/windows` at commit `b7920ed31356fb7f6a9275b34737d8604c65bac3`. Configurations:
 
@@ -23,15 +23,15 @@ for an event type without a filter comes from lab probes on Sysmon 15.22
 
 ## swiftonsecurity
 
-2420 rules analysed in 22 s.
+2420 rules analysed in 15 s.
 
 | Verdict | Rules |
 | --- | --- |
 | BLIND | 142 |
 | PARTIAL | 0 |
 | RULE_UNSAT | 0 |
-| UNKNOWN | 119 |
-| OK | 1610 |
+| UNKNOWN | 67 |
+| OK | 1662 |
 | SKIPPED | 549 |
 
 Configuration lines that make the most rules `BLIND` or `PARTIAL`:
@@ -50,22 +50,22 @@ Rules `BLIND` or `PARTIAL` without a configuration line, because their event typ
 
 ## neo23x0
 
-2420 rules analysed in 24 s.
+2420 rules analysed in 17 s.
 
 | Verdict | Rules |
 | --- | --- |
-| BLIND | 21 |
+| BLIND | 22 |
 | PARTIAL | 0 |
 | RULE_UNSAT | 0 |
-| UNKNOWN | 129 |
-| OK | 1721 |
+| UNKNOWN | 69 |
+| OK | 1780 |
 | SKIPPED | 549 |
 
 Configuration lines that make the most rules `BLIND` or `PARTIAL`:
 
 | Line | Rules | Element |
 | --- | --- | --- |
-| 456 | 5 | \<ImageLoad onmatch="include"\> |
+| 456 | 6 | \<ImageLoad onmatch="include"\> |
 | 496 | 1 | \<RawAccessRead onmatch="include"\> |
 | 875 | 1 | \<EventType condition="is"\>CreateKey\</EventType\> |
 | 886 | 1 | \<TargetObject condition="contains"\>\\Control\\WMI\\Autologger\\\</TargetObject\> \<!--Windows: Remove noise from monitoring "\\Start"--\> |
@@ -75,22 +75,22 @@ Rules `BLIND` or `PARTIAL` without a configuration line, because their event typ
 
 ## neo23x0-block
 
-2420 rules analysed in 22 s.
+2420 rules analysed in 16 s.
 
 | Verdict | Rules |
 | --- | --- |
-| BLIND | 21 |
+| BLIND | 22 |
 | PARTIAL | 0 |
 | RULE_UNSAT | 0 |
-| UNKNOWN | 129 |
-| OK | 1721 |
+| UNKNOWN | 69 |
+| OK | 1780 |
 | SKIPPED | 549 |
 
 Configuration lines that make the most rules `BLIND` or `PARTIAL`:
 
 | Line | Rules | Element |
 | --- | --- | --- |
-| 413 | 5 | \<ImageLoad onmatch="include"\> |
+| 413 | 6 | \<ImageLoad onmatch="include"\> |
 | 453 | 1 | \<RawAccessRead onmatch="include"\> |
 | 828 | 1 | \<EventType condition="is"\>CreateKey\</EventType\> |
 | 839 | 1 | \<TargetObject condition="contains"\>\\Control\\WMI\\Autologger\\\</TargetObject\> \<!--Windows: Remove noise from monitoring "\\Start"--\> |
@@ -100,15 +100,15 @@ Rules `BLIND` or `PARTIAL` without a configuration line, because their event typ
 
 ## sysmon-modular
 
-2420 rules analysed in 50 s.
+2420 rules analysed in 36 s.
 
 | Verdict | Rules |
 | --- | --- |
 | BLIND | 16 |
 | PARTIAL | 1 |
 | RULE_UNSAT | 0 |
-| UNKNOWN | 137 |
-| OK | 1717 |
+| UNKNOWN | 69 |
+| OK | 1785 |
 | SKIPPED | 549 |
 
 Configuration lines that make the most rules `BLIND` or `PARTIAL`:
@@ -125,15 +125,15 @@ Rules `BLIND` or `PARTIAL` without a configuration line, because their event typ
 
 ## sysmon-modular-excludes-only
 
-2420 rules analysed in 17 s.
+2420 rules analysed in 16 s.
 
 | Verdict | Rules |
 | --- | --- |
 | BLIND | 25 |
 | PARTIAL | 1 |
 | RULE_UNSAT | 0 |
-| UNKNOWN | 128 |
-| OK | 1717 |
+| UNKNOWN | 68 |
+| OK | 1777 |
 | SKIPPED | 549 |
 
 Configuration lines that make the most rules `BLIND` or `PARTIAL`:
