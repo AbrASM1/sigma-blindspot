@@ -6,8 +6,8 @@ from typing import Any, Final
 
 import z3
 
-from sigma_blindspot.prover.languages import Languages, Literal, check_pattern
-from sigma_blindspot.prover.strings import read
+from sigma_blindspot.prover.languages import Languages, Literal
+from sigma_blindspot.prover.strings import Unrepresentable, read
 from sigma_blindspot.prover.witness import applies, shared_witness
 from sigma_blindspot.sigma.evaluate import pattern_matches
 from sigma_blindspot.sigma.ir import (
@@ -195,7 +195,6 @@ class Search:
 
     def _atom(self, atom: Atom) -> Formula:
         if atom not in self._atoms:
-            check_pattern(atom.pattern)
             self._atoms[atom] = z3.Bool(f"atom:{len(self._atoms)}", self._context)
         return self._atoms[atom]
 
@@ -238,7 +237,11 @@ class Search:
             self._theory.push()
             try:
                 self._theory.set("timeout", self._remaining(deadline))
-                regex = z3.Intersect(self._languages.language(ordered), self._languages.folded)
+                try:
+                    language = self._languages.language(ordered)
+                except Unrepresentable as error:
+                    raise GaveUp(f"unsupported: {error}") from error
+                regex = z3.Intersect(language, self._languages.folded)
                 self._theory.add(z3.InRe(self._value, regex))
                 result = self._theory.check()
                 if result == z3.unknown:

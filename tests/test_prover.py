@@ -1,4 +1,5 @@
 import textwrap
+from typing import Any
 
 import pytest
 import z3
@@ -8,9 +9,16 @@ from hypothesis import strategies as st
 from strategies import FIELDS, configs, supported_nodes, texts
 
 from sigma_blindspot.prover import prove as prove_module
-from sigma_blindspot.prover.prove import Proof, Prover, Verdict
+from sigma_blindspot.prover.prove import (
+    DEFAULT_TIMEOUT_MS,
+    RETRY_FACTOR,
+    Proof,
+    Prover,
+    Verdict,
+)
+from sigma_blindspot.prover.search import Outcome, Search
 from sigma_blindspot.sigma.evaluate import evaluate
-from sigma_blindspot.sigma.ir import Branch, LoadedRule, Node, Or
+from sigma_blindspot.sigma.ir import Branch, LoadedRule, Match, MoreThan, Node, Or
 from sigma_blindspot.sigma.loader import parse_rules
 from sigma_blindspot.sysmon.model import Event, SysmonConfig
 from sigma_blindspot.sysmon.parser import parse_config
@@ -152,9 +160,37 @@ def test_the_event_id_field_selects_the_event_type() -> None:
     assert proof.example.event_id == 13
 
 
-def test_a_value_z3_cannot_represent_gives_unknown() -> None:
+def test_a_value_beyond_z3_characters_is_decided_without_z3() -> None:
     proof = proof_of("sel:\n  Image: 'a\U000e0001'\ncondition: sel\n")
-    assert proof.verdict is Verdict.UNKNOWN and "U+E0001" in proof.reason
+    assert proof.verdict is Verdict.OK and proof.example is not None
+    assert dict(proof.example.fields)["Image"] == "a\U000e0001"
+
+
+def test_a_value_beyond_z3_characters_gives_unknown_when_z3_is_needed() -> None:
+    search = Search(DEFAULT_TIMEOUT_MS)
+    encoded = search.encode(Match("Image", MoreThan("\U000e0001")), 1)
+    outcome = search.check(search.solver(), (encoded,))
+    assert outcome.result == z3.unknown
+    assert outcome.why_unknown.startswith("unsupported: U+E0001 is beyond")
+
+
+def test_a_rule_that_times_out_is_proved_again_with_more_time(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    check = Search.check
+    limits: list[int] = []
+
+    def impatient(self: Search, *args: Any) -> Outcome:
+        limits.append(self._timeout_ms)
+        if self._timeout_ms == DEFAULT_TIMEOUT_MS:
+            return Outcome(z3.unknown, why_unknown="timeout")
+        return check(self, *args)
+
+    monkeypatch.setattr(Search, "check", impatient)
+    monkeypatch.setattr(prove_module, "_config_status", lambda *args: None)
+    proof = proof_of("sel:\n  Image|endswith: '\\powershell.exe'\ncondition: sel\n")
+    assert proof.verdict is Verdict.OK
+    assert DEFAULT_TIMEOUT_MS * RETRY_FACTOR in limits
 
 
 def test_a_model_the_emulator_rejects_is_never_reported_ok(

@@ -8,7 +8,6 @@ import z3
 
 from sigma_blindspot.prover.encode import Tracked, encode_config
 from sigma_blindspot.prover.search import Encoded, Outcome, Search
-from sigma_blindspot.prover.strings import Unrepresentable
 from sigma_blindspot.sigma.evaluate import evaluate
 from sigma_blindspot.sigma.ir import Branch, LoadedRule, Node, unsupported
 from sigma_blindspot.sysmon.conditions import fold
@@ -22,6 +21,9 @@ from sigma_blindspot.sysmon.events import (
 from sigma_blindspot.sysmon.model import Event, Lines, SysmonConfig
 
 DEFAULT_TIMEOUT_MS: Final = 2000
+RETRY_FACTOR: Final = 5
+_UNSUPPORTED: Final = "unsupported: "
+_TIMEOUTS: Final = ("Z3 gave up: timeout", "Z3 gave up: canceled")
 
 type Fields = tuple[tuple[str, str], ...]
 
@@ -134,6 +136,11 @@ def _proof(rule: LoadedRule, branches: tuple[BranchProof, ...]) -> Proof:
     return Proof(rule, combined, _reasons(findings), lines, None, branches)
 
 
+def _timed_out(proof: Proof) -> bool:
+    findings = (finding for branch in proof.branches for finding in branch.findings)
+    return any(finding.reason in _TIMEOUTS for finding in findings)
+
+
 def _default(event_id: int, tag: EventTag) -> Finding | None:
     match default_without_filter(tag):
         case Default.NOT_LOGGED:
@@ -158,10 +165,7 @@ def _tracked_scope(search: Search, tracked: tuple[Tracked, ...]) -> _Scope:
 
 def _config_status(timeout_ms: int, tracked: tuple[Tracked, ...], event_id: int) -> Finding | None:
     search = Search(timeout_ms)
-    try:
-        scope = _tracked_scope(search, tracked)
-    except Unrepresentable as error:
-        return Finding(event_id, Verdict.UNKNOWN, f"unsupported: {error}")
+    scope = _tracked_scope(search, tracked)
     outcome = search.check(scope.solver, (), scope.asserted)
     if outcome.result == z3.unsat:
         lines = _union(scope.labels[label] for label in outcome.core)
@@ -173,10 +177,10 @@ def _config_status(timeout_ms: int, tracked: tuple[Tracked, ...], event_id: int)
 
 
 class _Session:
-    def __init__(self, prover: "Prover") -> None:
+    def __init__(self, prover: "Prover", timeout_ms: int) -> None:
         self._prover = prover
         self._config = prover.config
-        self._search = Search(prover.timeout_ms)
+        self._search = Search(timeout_ms)
         self._alone = self._search.solver()
         self._scopes: dict[int, _Scope] = {}
 
@@ -199,7 +203,9 @@ class _Session:
 
     def _settle(self, node: Node, event_id: int, outcome: Outcome) -> Finding:
         if outcome.result != z3.sat:
-            return Finding(event_id, Verdict.UNKNOWN, f"Z3 gave up: {outcome.why_unknown}")
+            why = outcome.why_unknown
+            reason = why if why.startswith(_UNSUPPORTED) else f"Z3 gave up: {why}"
+            return Finding(event_id, Verdict.UNKNOWN, reason)
         values = tuple((name, fold(value)) for name, value in outcome.values)
         event = Event(event_id, dict(values))
         if evaluate(node, event) is not True or self._config.evaluate(event).logged is not True:
@@ -209,11 +215,8 @@ class _Session:
     def _encoded(self, node: Node, event_id: int) -> Encoded | str:
         reasons = unsupported(node)
         if reasons:
-            return "unsupported: " + ", ".join(reasons)
-        try:
-            return self._search.encode(node, event_id)
-        except Unrepresentable as error:
-            return f"unsupported: {error}"
+            return _UNSUPPORTED + ", ".join(reasons)
+        return self._search.encode(node, event_id)
 
     def finding(self, node: Node, event_id: int) -> Finding:
         scope = self._scope(event_id)
@@ -258,8 +261,14 @@ class Prover:
             self._status[tag] = _config_status(self.timeout_ms, self.tracked(tag), first)
         return self._status[tag]
 
-    def prove(self, rule: LoadedRule) -> Proof:
-        session = _Session(self)
+    def _prove(self, rule: LoadedRule, timeout_ms: int) -> Proof:
+        session = _Session(self, timeout_ms)
         return _proof(
             rule, tuple(session.branch(branch, rule.event_ids) for branch in rule.branches)
         )
+
+    def prove(self, rule: LoadedRule) -> Proof:
+        proof = self._prove(rule, self.timeout_ms)
+        if proof.verdict is Verdict.UNKNOWN and _timed_out(proof):
+            return self._prove(rule, self.timeout_ms * RETRY_FACTOR)
+        return proof

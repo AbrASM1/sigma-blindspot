@@ -3,7 +3,7 @@ from typing import Any
 
 import z3
 
-from sigma_blindspot.prover.strings import MAX_CHAR, check_representable, lit
+from sigma_blindspot.prover.strings import MAX_CHAR, lit
 from sigma_blindspot.sigma.ir import (
     Contains,
     Equals,
@@ -18,20 +18,6 @@ from sigma_blindspot.sigma.ir import (
 
 type Regex = Any
 type Literal = tuple[Pattern, bool]
-
-
-def check_pattern(pattern: Pattern) -> None:
-    match pattern:
-        case Glob(parts=parts):
-            for part in parts:
-                if isinstance(part, str):
-                    check_representable(part)
-        case LessThan(value=value):
-            check_representable(value[:-1])
-            if value and ord(value[-1]) > 0:
-                check_representable(chr(ord(value[-1]) - 1))
-        case _:
-            check_representable(pattern.value)
 
 
 class Languages:
