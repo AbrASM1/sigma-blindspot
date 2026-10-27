@@ -120,7 +120,8 @@ def selection(item: str) -> str:
         pytest.param(
             "Image|fieldref: ParentImage", Unsupported("field reference (fieldref)"), id="fieldref"
         ),
-        pytest.param("Image: true", Unsupported("boolean value"), id="bool"),
+        pytest.param("Initiated: true", Match("Initiated", Equals("true")), id="true"),
+        pytest.param("Initiated: false", Match("Initiated", Equals("false")), id="false"),
         pytest.param("UtcTime|minute: 5", Unsupported("timestamp modifier"), id="timestamp"),
         pytest.param(
             r"Image|expand: '%dir%\x.exe'", Unsupported("placeholder (expand)"), id="placeholder"

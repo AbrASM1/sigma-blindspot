@@ -74,7 +74,6 @@ _UNSUPPORTED_VALUES: Final[tuple[tuple[type[SigmaType], str], ...]] = (
     (SigmaExists, "field existence (exists)"),
     (SigmaCompareExpression, "numeric comparison (lt, lte, gt, gte)"),
     (SigmaFieldReference, "field reference (fieldref)"),
-    (SigmaBool, "boolean value"),
     (SigmaQueryExpression, "query expression"),
 )
 
@@ -119,6 +118,11 @@ def _null(field: str) -> Node:
     return Match(field, Equals(""))
 
 
+@assumes(Semantic.BOOLEAN_TEXT)
+def _boolean(field: str, value: SigmaBool) -> Node:
+    return Match(field, Equals("true" if value.boolean else "false"))
+
+
 def _value(field: str, value: SigmaType) -> Node:
     reason = next((text for kind, text in _UNSUPPORTED_VALUES if isinstance(value, kind)), None)
     if reason is not None:
@@ -130,6 +134,8 @@ def _value(field: str, value: SigmaType) -> Node:
             return Match(field, Equals(fold(str(value))))
         case SigmaNull():
             return _null(field)
+        case SigmaBool():
+            return _boolean(field, value)
         case SigmaExpansion():
             return _flatten(Or, (_value(field, item) for item in value.values))
     return Unsupported(f"value type {type(value).__name__}")

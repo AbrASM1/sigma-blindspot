@@ -62,9 +62,11 @@
   technique with one rule that can fire, or that is not decided, is left out. `FILE` is never
   one of the inputs.
 - `--samples DIR` checks the rules against real attack samples (see "Recorded attacks").
-- `--timeout-ms N` limits each Z3 check (default 2000). `--jobs N` proves rules in N worker
-  processes; the output is the same as with one. The default, `auto`, uses one worker per 50
-  rules, up to the number of processors, so a small rule set runs in one process.
+- `--timeout-ms N` limits each Z3 check (default 2000). A rule that times out is proved once
+  more with 5 times the limit before it is reported `UNKNOWN`, so only the slow rules wait longer.
+- `--jobs N` proves rules in N worker processes; the output is the same as with one. The default
+  is 2, or 1 for fewer than 100 rules, so that an analysis leaves the machine usable. `--jobs auto`
+  uses one worker per 50 rules, up to the number of processors.
 - A rule file that fails to load is reported as `SKIPPED` and never stops the analysis. When
   `RULES` contains no `*.yml` file, a warning says so.
 
@@ -99,10 +101,12 @@ modifiers applied. The YAML is never interpreted by hand.
   `all`, `neq`, `windash`, the encoding modifiers (`base64`, `base64offset`, `wide`), and numbers,
   compared as strings. Matching is case-insensitive, and the `EventID` field is the event ID.
   `null` matches an empty value (an assumption, see "Sysmon semantics implemented"): SigmaHQ uses
-  it almost only in filters that leave out events whose field is empty.
+  it almost only in filters that leave out events whose field is empty. Sysmon writes `-` for
+  some values it does not know, such as `OriginalFileName` or `ParentImage`; `-` is a value, not
+  `null`, as in SigmaHQ's own regression tests. Booleans match the text `true` or `false`, which
+  is how Sysmon writes `Initiated`, `Signed` or `SourceIsIpv6`.
 - Unsupported, each with its own reason: `cased`, `re`, `cidr`, `exists`, `lt`, `lte`, `gt`,
-  `gte`, `fieldref`, boolean values, timestamp modifiers, `expand` placeholders and keyword
-  searches.
+  `gte`, `fieldref`, timestamp modifiers, `expand` placeholders and keyword searches.
 - A condition is split into top-level OR branches: the alternatives of its outermost `or` or
   `1 of`. A selection, with its lists of values or maps, stays in one branch. Each branch is
   labelled with the selections it uses.
@@ -229,6 +233,7 @@ lab probe. `tests/test_semantics.py` keeps this table in sync with
 | Case-insensitivity follows the Unicode lower-case mapping | assumed |
 | Events carry every field that the config or a rule names for their type | assumed |
 | A Sigma `null` value matches a field whose value is empty | assumed |
+| A Sigma boolean matches the text `true` or `false` | assumed |
 
 ## Known limitations
 
