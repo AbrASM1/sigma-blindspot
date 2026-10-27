@@ -7,6 +7,7 @@ from sigma_blindspot.report.analysis import (
     FAILING,
     Analysis,
     Result,
+    counted,
     counts,
     rules_by_line,
     shown,
@@ -18,10 +19,6 @@ _BREAKS: Final = re.compile(r"[\r\n]+")
 
 def escape(text: str) -> str:
     return _SPECIAL.sub(r"\\\1", _BREAKS.sub(" ", text))
-
-
-def _rules(count: int) -> str:
-    return f"{count} rule" if count == 1 else f"{count} rules"
 
 
 def _row(proof: Proof) -> str:
@@ -69,7 +66,7 @@ def markdown_lines(analysis: Analysis) -> Iterator[str]:
     for line, proofs in groups:
         where = "No configuration line" if line is None else f"{config_source}:{line}"
         yield ""
-        yield f"### {where}, {_rules(len(proofs))}"
+        yield f"### {where}, {counted(len(proofs), 'rule')}"
         yield ""
         yield "| Verdict | Title | Rule | Category | Reason |"
         yield "| --- | --- | --- | --- | --- |"

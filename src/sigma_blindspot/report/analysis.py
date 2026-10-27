@@ -109,10 +109,14 @@ def result_lines(analysis: Analysis, only: frozenset[str] = frozenset()) -> Iter
         )
 
 
+def counted(count: int, noun: str) -> str:
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+
+
 def summary_line(analysis: Analysis) -> str:
     found = counts(analysis.results, analysis.samples is not None)
     total = ", ".join(f"{count} {verdict}" for verdict, count in found.items())
-    return f"{len(analysis.results)} rules: {total}"
+    return f"{counted(len(analysis.results), 'rule')}: {total}"
 
 
 def text_lines(analysis: Analysis) -> Iterator[str]:

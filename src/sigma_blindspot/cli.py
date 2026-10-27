@@ -17,6 +17,7 @@ from sigma_blindspot.prover.prove import DEFAULT_TIMEOUT_MS, Verdict
 from sigma_blindspot.report.analysis import (
     ORDER,
     Analysis,
+    counted,
     failing,
     json_document,
     result_lines,
@@ -198,7 +199,7 @@ def _check_event(arguments: argparse.Namespace) -> int:
         _status(before, _STATES[decision.logged], after, arguments.colors)
     counts = Counter(item.decision.logged for item in evaluated)
     summary = (
-        f"{len(evaluated)} events: {counts[True]} logged, {counts[False]} dropped, "
+        f"{counted(len(evaluated), 'event')}: {counts[True]} logged, {counts[False]} dropped, "
         f"{counts[None]} unknown"
     )
     _print(paint_counts(_ascii(summary), arguments.colors))
@@ -263,6 +264,13 @@ _COMMANDS: Final[Mapping[str, Callable[[argparse.Namespace], int]]] = MappingPro
 class _Formatter(argparse.RawDescriptionHelpFormatter):
     def __init__(self, prog: str) -> None:
         super().__init__(prog, max_help_position=30)
+
+    def _format_action(self, action: argparse.Action) -> str:
+        text = super()._format_action(action)
+        if isinstance(action, argparse._SubParsersAction):
+            commands = text.split("\n", 1)[1]
+            return "\n".join(line.removeprefix("  ") for line in commands.split("\n"))
+        return text
 
 
 class _Parser(argparse.ArgumentParser):

@@ -71,7 +71,7 @@ def test_fewer_matches_than_sigmahq_expects_is_a_mismatch(tmp_path: Path) -> Non
     root = sigmahq(tmp_path, 2, SCCM, "C:\\Windows\\explorer.exe")
     _, mismatches = validate(root, configs())
     assert [item.check for item in mismatches] == ["1 evaluator"]
-    assert "matches 1 events, SigmaHQ expects at least 2" in mismatches[0].detail
+    assert "matches 1 event, SigmaHQ expects at least 2" in mismatches[0].detail
 
 
 def test_an_undecided_encoding_is_a_mismatch(

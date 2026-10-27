@@ -13,6 +13,7 @@ from fetch_sigmahq import COMMIT, fetch_sigmahq
 from sigma_blindspot.errors import EventError
 from sigma_blindspot.prover.prove import Proof, Prover, Verdict
 from sigma_blindspot.prover.search import Search
+from sigma_blindspot.report.analysis import counted
 from sigma_blindspot.samples import Sample, matching, samples
 from sigma_blindspot.sigma.evaluate import evaluate
 from sigma_blindspot.sigma.ir import And, Equals, LoadedRule, Match, Node, unsupported
@@ -98,7 +99,8 @@ def _check(
         return
     minimum = 1 if sample.match_count is None else sample.match_count
     if len(found) < minimum:
-        detail = f"the evaluator matches {len(found)} events, SigmaHQ expects at least {minimum}"
+        matched = counted(len(found), "event")
+        detail = f"the evaluator matches {matched}, SigmaHQ expects at least {minimum}"
         yield Mismatch("1 evaluator", rule.source, detail)
     elif sample.match_count is not None and len(found) > sample.match_count:
         counts["evaluator matches more events than match_count (a SigmaHQ warning)"] += 1

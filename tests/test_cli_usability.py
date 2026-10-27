@@ -54,6 +54,15 @@ def test_help_without_a_command_shows_the_overview(capsys: Capture) -> None:
     code, out, _ = run(capsys, "help")
     assert code == cli.EXIT_OK
     assert "Getting started (PowerShell):" in out and "help COMMAND" in out
+    commands = out.split("commands:\n", 1)[1].split("\n\n", 1)[0].splitlines()
+    assert [line.split()[0] for line in commands] == [
+        "doctor",
+        "inspect",
+        "check-event",
+        "analyze",
+        "help",
+    ]
+    assert all(line.startswith("  ") and line[2] != " " for line in commands)
 
 
 def test_analyze_help_explains_every_verdict_and_exit_code(capsys: Capture) -> None:
@@ -109,7 +118,7 @@ def test_color_always_paints_verdicts_and_counts_only(capsys: Capture, write: Wr
     first, summary = out.splitlines()
     assert first.startswith(f"{BLIND} {rule} ")
     assert '"\\u001b[32mBLIND"' in first and first.count("\x1b") == 2
-    assert summary == (f"1 rules: 1 {BLIND}, 0 PARTIAL, 0 RULE_UNSAT, 0 UNKNOWN, 0 OK, 0 SKIPPED")
+    assert summary == (f"1 rule: 1 {BLIND}, 0 PARTIAL, 0 RULE_UNSAT, 0 UNKNOWN, 0 OK, 0 SKIPPED")
 
 
 def test_color_never_wins_over_a_terminal(capsys: Capture) -> None:
@@ -122,7 +131,7 @@ def test_check_event_paints_the_decision(capsys: Capture, write: Writer) -> None
     _, out, _ = run(capsys, "check-event", str(CONFIG), str(events), "--color", "always")
     assert out.splitlines() == [
         f"{events}:1: EventID 1 \x1b[32mLOGGED\x1b[0m matched no exclude filter",
-        "1 events: 1 \x1b[32mlogged\x1b[0m, 0 dropped, 0 unknown",
+        "1 event: 1 \x1b[32mlogged\x1b[0m, 0 dropped, 0 unknown",
     ]
 
 
