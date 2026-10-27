@@ -8,6 +8,7 @@ import z3
 
 from sigma_blindspot.prover.languages import Languages, Literal, check_pattern
 from sigma_blindspot.prover.strings import read
+from sigma_blindspot.prover.witness import applies, shared_witness
 from sigma_blindspot.sigma.evaluate import pattern_matches
 from sigma_blindspot.sigma.ir import (
     And,
@@ -231,6 +232,8 @@ class Search:
         quick = quick_witness(ordered)
         if quick is not UNDECIDED:
             return quick
+        if applies(ordered):
+            return shared_witness(literals)
         if literals not in self._witnesses:
             self._theory.push()
             try:
