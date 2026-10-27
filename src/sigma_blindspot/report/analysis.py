@@ -92,9 +92,10 @@ def _where(config_source: str, lines: Lines) -> str:
     return f" ({places})" if places else ""
 
 
-def text_lines(analysis: Analysis) -> Iterator[str]:
-    results = analysis.results
-    for result in ordered(results):
+def result_lines(analysis: Analysis, only: frozenset[str] = frozenset()) -> Iterator[str]:
+    for result in ordered(analysis.results):
+        if only and verdict_of(result) not in only:
+            continue
         title = _title(result)
         named = "" if title is None else f" {json.dumps(title)}"
         if isinstance(result, Skipped):
@@ -106,9 +107,17 @@ def text_lines(analysis: Analysis) -> Iterator[str]:
             f"{result.verdict} {result.rule.source}{named} {result.rule.category} ({ids}): "
             f"{result.reason}{where}"
         )
-    found = counts(results, analysis.samples is not None)
+
+
+def summary_line(analysis: Analysis) -> str:
+    found = counts(analysis.results, analysis.samples is not None)
     total = ", ".join(f"{count} {verdict}" for verdict, count in found.items())
-    yield f"{len(results)} rules: {total}"
+    return f"{len(analysis.results)} rules: {total}"
+
+
+def text_lines(analysis: Analysis) -> Iterator[str]:
+    yield from result_lines(analysis)
+    yield summary_line(analysis)
 
 
 def _example(example: Example | None) -> dict[str, object] | None:

@@ -302,7 +302,10 @@ def test_a_broken_sample_is_an_error(capsys: Capture, tmp_path: Path) -> None:
 def test_samples_need_a_regression_data_folder(capsys: Capture, tmp_path: Path) -> None:
     code, _, err = run(capsys, "analyze", str(CONFIG), str(POWERSHELL), "--samples", str(tmp_path))
     assert code == cli.EXIT_ERROR
-    assert err == f"error: {tmp_path}: no regression_data folder\n"
+    assert err == (
+        f"error: {tmp_path}: no regression_data folder\n"
+        "hint: --samples expects a clone of SigmaHQ: the folder that contains regression_data\n"
+    )
 
 
 def test_load_samples_raises_event_errors(tmp_path: Path) -> None:

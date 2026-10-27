@@ -216,7 +216,7 @@ def test_html_report_into_a_directory_fails_without_output(
     config = write("sysmon.xml", DOC_SAMPLE)
     code, out, err = run(capsys, "inspect", str(config), "--html", str(tmp_path))
     assert (code, out) == (cli.EXIT_ERROR, "")
-    assert err.startswith("error: [Errno ")
+    assert err.startswith(f"error: {tmp_path}: this is a folder, a file is expected\n")
 
 
 def test_reports_config_errors_with_their_location(capsys: Capture, write: Writer) -> None:
@@ -242,7 +242,10 @@ def test_reports_event_errors_with_their_location(capsys: Capture, write: Writer
 def test_reports_unreadable_files(capsys: Capture, tmp_path: Path) -> None:
     code, out, err = run(capsys, "inspect", str(tmp_path / "missing.xml"))
     assert (code, out) == (cli.EXIT_ERROR, "")
-    assert err.startswith("error: [Errno 2]") and "missing.xml" in err
+    assert err == (
+        f"error: {tmp_path / 'missing.xml'}: file or folder not found\n"
+        "hint: check the path; put a path that contains spaces in quotes\n"
+    )
 
 
 def test_version(capsys: Capture) -> None:
@@ -252,11 +255,11 @@ def test_version(capsys: Capture) -> None:
     assert capsys.readouterr().out == f"sigma-blindspot {metadata.version('sigma-blindspot')}\n"
 
 
-def test_a_command_is_required(capsys: Capture) -> None:
-    with pytest.raises(SystemExit) as stopped:
-        cli.main([])
-    assert stopped.value.code == cli.EXIT_ERROR
-    assert "required: COMMAND" in capsys.readouterr().err
+def test_without_a_command_the_help_is_shown(capsys: Capture) -> None:
+    code, out, err = run(capsys)
+    assert (code, err) == (cli.EXIT_ERROR, "")
+    assert "Getting started (PowerShell):" in out
+    assert all(f"sigma-blindspot {command} " in out for command in ("inspect", "analyze"))
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="EPIPE on a closed pipe is POSIX behaviour")

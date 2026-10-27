@@ -14,6 +14,7 @@ from sigma_blindspot.sysmon.evtx_json import SYSMON_PROVIDER, load_evtx_json
 from sigma_blindspot.sysmon.model import Event, SysmonConfig
 
 DROPPED: Final = "SigmaHQ's recorded attack is dropped by the config"
+NO_REGRESSION_DATA: Final = "no regression_data folder"
 _CHECKED: Final = frozenset({Verdict.OK, Verdict.PARTIAL})
 
 
@@ -85,7 +86,7 @@ def samples(root: Path) -> Iterator[Sample]:
 
 def load_samples(root: Path) -> Samples:
     if not (root / "regression_data").is_dir():
-        raise EventError("no regression_data folder", None, str(root))
+        raise EventError(NO_REGRESSION_DATA, None, str(root))
     found: dict[str, list[Sample]] = {}
     for sample in samples(root):
         found.setdefault(sample.rule_id, []).append(sample)

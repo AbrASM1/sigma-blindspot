@@ -170,7 +170,7 @@ def test_invalid_inputs_exit_with_2(capsys: Capture, write: Writer, tmp_path: Pa
     assert err.startswith(f"error: {bad}:1: <Bogus> is not a Sysmon event filter")
     code, out, err = run(capsys, "analyze", str(CONFIG), str(tmp_path / "missing"))
     assert (code, out) == (cli.EXIT_ERROR, "")
-    assert err.startswith("error: [Errno 2]")
+    assert err.startswith(f"error: {tmp_path / 'missing'}: file or folder not found\n")
 
 
 @pytest.mark.parametrize("option", ["--timeout-ms", "--jobs"])
