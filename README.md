@@ -4,24 +4,30 @@ Proves which Sigma rules can never fire under a Sysmon configuration and names t
 
 ## Install
 
-Requires [`uv`](https://docs.astral.sh/uv/), which fetches Python 3.12 if it is missing.
+Requires [`uv`](https://docs.astral.sh/uv/), which fetches Python 3.12 if it is missing. In PowerShell, install `sigma-blindspot` as a command:
 
-```console
-git clone https://github.com/AbrASM1/sigma-blindspot.git
-cd sigma-blindspot
-uv sync
-uv run sigma-blindspot doctor
+```powershell
+uv tool install git+https://github.com/AbrASM1/sigma-blindspot
+sigma-blindspot doctor
 ```
+
+If PowerShell does not find `sigma-blindspot`, run `uv tool update-shell` once and open a new window. To work on the code instead, clone the repository, run `uv sync`, and prefix every command with `uv run`.
 
 ## Usage
 
-```console
-uv run sigma-blindspot analyze CONFIG RULES... [--format text|json|markdown|sarif] [--navigator FILE] [--fail-on-blind] [--samples DIR] [--timeout-ms N] [--jobs N]
-uv run sigma-blindspot inspect CONFIG [--html FILE]
-uv run sigma-blindspot check-event CONFIG EVENTS [--html FILE]
+```powershell
+sigma-blindspot                      # what the tool does and where to start
+sigma-blindspot help analyze         # options, examples, verdicts and exit codes
+sigma-blindspot analyze .\sysmonconfig.xml .\rules
+sigma-blindspot analyze .\sysmonconfig.xml .\rules --only BLIND,PARTIAL
+sigma-blindspot analyze .\sysmonconfig.xml .\rules --format markdown --output .\report.md
+sigma-blindspot inspect .\sysmonconfig.xml --html .\config.html
+sigma-blindspot check-event .\sysmonconfig.xml .\events.jsonl
 ```
 
-`analyze` on the configuration and rules in `tests/fixtures/`:
+In a terminal, verdicts are in color and a long `analyze` shows its progress; `--color never` or the `NO_COLOR` variable turn colors off, and output redirected to a file is never colored. `--output FILE` writes the report in UTF-8, which `>` does not do in Windows PowerShell 5.1. `--jobs` uses several processors by default on large rule sets.
+
+`analyze` on the configuration and rules in `tests/fixtures/`, from a clone:
 
 ```console
 $ uv run sigma-blindspot analyze tests/fixtures/sysmon.xml tests/fixtures/rules

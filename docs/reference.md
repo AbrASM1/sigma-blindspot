@@ -8,10 +8,20 @@
 - The configuration parser is strict: unknown attributes, a missing `onmatch` or `groupRelation`,
   an unknown condition, an empty `<Rule>` or text where only elements belong raise an error
   instead of guessing what Sysmon would do.
-- Configuration and event errors go to stderr as `error: FILE:LINE: message`.
+- Configuration and event errors go to stderr as `error: FILE:LINE: message`. A missing file,
+  a folder where a file is expected, a configuration that is not XML or a `--samples` folder
+  without `regression_data` add a `hint:` line that says what to check. A wrong argument prints
+  the usage of the command and points to its `--help`.
 - Every command prints only printable ASCII, errors included. Any other character, including a
   control character in a file name, is escaped, so output redirected on Windows (cp1252) stays
   readable and a file name cannot inject terminal escape sequences.
+- `--color auto|always|never` (every command, default `auto`): in a terminal, verdicts, event
+  decisions and `doctor` checks are colored with ANSI codes, added after the escaping above.
+  `auto` colors only a terminal, and not when `NO_COLOR` is set or `TERM` is `dumb`; `always`
+  colors even redirected output. JSON, Markdown and SARIF output are never colored.
+- `sigma-blindspot` without a command prints an overview with examples and exits with `2`.
+  `sigma-blindspot help COMMAND` and `COMMAND --help` print the options of a command, PowerShell
+  examples and its exit codes; `help analyze` also explains every verdict.
 - Exit codes: `0` success, `1` a `doctor` check failed, `analyze --fail-on-blind` found a `BLIND`,
   `MISSED` or `PARTIAL` rule, or the reader closed the output early, `2` invalid input
   (configuration, events, samples, or a rules path that does not exist).
@@ -25,6 +35,13 @@
   `UNKNOWN`, `OK`, `SKIPPED`) then by path, with the title, the category and its event IDs, the
   reason and the configuration lines responsible. A summary line counts each verdict; `MISSED` is
   counted only with `--samples`.
+- `--only VERDICTS` (text output only): lists only the rules with these verdicts, comma
+  separated and case-insensitive, for example `--only BLIND,PARTIAL`; the summary still counts
+  every rule.
+- `--output FILE` writes the report, in any format, to `FILE` in UTF-8 with the same content as
+  the terminal output without colors, then prints only the summary. `FILE` is never one of the
+  inputs.
+- In a terminal, the progress of the proofs is shown on stderr and erased at the end.
 - `--format json`: `schema_version` (2), `tool` (name and version), `config` (path and
   SHA-256), `samples` (the `--samples` folder, or `null`), `summary` (count per verdict) and
   `results`. Each result has the verdict, the rule path, title, id, category, event IDs, tags,
@@ -46,8 +63,10 @@
   one of the inputs.
 - `--samples DIR` checks the rules against real attack samples (see "Recorded attacks").
 - `--timeout-ms N` limits each Z3 check (default 2000). `--jobs N` proves rules in N worker
-  processes; the output is the same as with one.
-- A rule file that fails to load is reported as `SKIPPED` and never stops the analysis.
+  processes; the output is the same as with one. The default, `auto`, uses one worker per 50
+  rules, up to the number of processors, so a small rule set runs in one process.
+- A rule file that fails to load is reported as `SKIPPED` and never stops the analysis. When
+  `RULES` contains no `*.yml` file, a warning says so.
 
 ## HTML report
 
