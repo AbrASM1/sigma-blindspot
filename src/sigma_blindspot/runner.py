@@ -8,6 +8,7 @@ from sigma_blindspot.sysmon.model import SysmonConfig
 from sigma_blindspot.sysmon.parser import parse_config
 
 RULES_PER_WORKER: Final = 50
+DEFAULT_JOBS: Final = 2
 
 type Progress = Callable[[int], None]
 
@@ -27,6 +28,10 @@ def _prove(rule: LoadedRule) -> Proof:
 
 def auto_jobs(rules: int, processors: int | None) -> int:
     return max(1, min(processors or 1, rules // RULES_PER_WORKER))
+
+
+def default_jobs(rules: int, processors: int | None) -> int:
+    return min(DEFAULT_JOBS, auto_jobs(rules, processors))
 
 
 def _collect(proofs: Iterable[Proof], progress: Progress | None) -> tuple[Proof, ...]:

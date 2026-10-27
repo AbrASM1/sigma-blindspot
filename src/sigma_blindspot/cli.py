@@ -13,7 +13,7 @@ from typing import Final, NoReturn, TextIO
 from sigma_blindspot import doctor, help_text
 from sigma_blindspot.console import ColorMode, color_enabled, paint, paint_counts
 from sigma_blindspot.errors import ConfigError, SourceError
-from sigma_blindspot.prover.prove import DEFAULT_TIMEOUT_MS, Verdict
+from sigma_blindspot.prover.prove import DEFAULT_TIMEOUT_MS, RETRY_FACTOR, Verdict
 from sigma_blindspot.report.analysis import (
     ORDER,
     Analysis,
@@ -27,7 +27,13 @@ from sigma_blindspot.report.html import Evaluated, EventsInput, render
 from sigma_blindspot.report.markdown import markdown_lines
 from sigma_blindspot.report.navigator import layer_document
 from sigma_blindspot.report.sarif import sarif_document
-from sigma_blindspot.runner import RULES_PER_WORKER, auto_jobs, prove_all
+from sigma_blindspot.runner import (
+    DEFAULT_JOBS,
+    RULES_PER_WORKER,
+    auto_jobs,
+    default_jobs,
+    prove_all,
+)
 from sigma_blindspot.samples import NO_REGRESSION_DATA, check_samples, load_samples
 from sigma_blindspot.sigma.ir import LoadedRule, Skipped
 from sigma_blindspot.sigma.loader import load_rules
@@ -55,6 +61,7 @@ _REPORTS: Final[Mapping[str, Callable[[Analysis], Iterable[str]]]] = MappingProx
 _FORMATS: Final = ("text", *_REPORTS)
 _VERDICTS: Final = tuple(map(str, ORDER))
 _COMMAND_NAMES: Final = ("doctor", "inspect", "check-event", "analyze")
+_AUTO: Final = "auto"
 _HELP_HINT: Final = "run 'sigma-blindspot {command} --help' for the expected arguments and examples"
 
 
@@ -223,7 +230,7 @@ def _analyze(arguments: argparse.Namespace) -> int:
         _err("warning: MISSED needs --samples DIR; without it no rule is MISSED")
     rules = [item for item in loaded if isinstance(item, LoadedRule)]
     samples = None if arguments.samples is None else load_samples(arguments.samples)
-    jobs = arguments.jobs or auto_jobs(len(rules), os.cpu_count())
+    jobs = _job_count(arguments.jobs, len(rules))
     progress = _progress(len(rules))
     try:
         update = None if progress is None else progress.update
@@ -291,13 +298,21 @@ def _positive(text: str) -> int:
     return value
 
 
-def _jobs(text: str) -> int | None:
-    if text.strip().lower() == "auto":
-        return None
+def _jobs(text: str) -> int | str:
+    if text.strip().lower() == _AUTO:
+        return _AUTO
     try:
         return _positive(text)
     except argparse.ArgumentTypeError as error:
         raise argparse.ArgumentTypeError(f"{error}, or auto") from None
+
+
+def _job_count(requested: int | str | None, rules: int) -> int:
+    if requested == _AUTO:
+        return auto_jobs(rules, os.cpu_count())
+    if isinstance(requested, int):
+        return requested
+    return default_jobs(rules, os.cpu_count())
 
 
 def _verdicts(text: str) -> frozenset[str]:
@@ -391,14 +406,16 @@ def _add_analyze(commands: "argparse._SubParsersAction[_Parser]") -> _Parser:
         default=None,
         metavar="N",
         help=f"worker processes, or auto: one per {RULES_PER_WORKER} rules, up to the number "
-        f"of processors ({os.cpu_count() or 1} here) (default: auto)",
+        f"of processors ({os.cpu_count() or 1} here) (default: {DEFAULT_JOBS}, or 1 for fewer "
+        f"than {2 * RULES_PER_WORKER} rules)",
     )
     performance.add_argument(
         "--timeout-ms",
         type=_positive,
         default=DEFAULT_TIMEOUT_MS,
         metavar="N",
-        help="Z3 time limit per check, in milliseconds; a timeout gives UNKNOWN "
+        help=f"Z3 time limit per check, in milliseconds; a rule that times out is proved again "
+        f"once with {RETRY_FACTOR} times the limit, then gives UNKNOWN "
         f"(default: {DEFAULT_TIMEOUT_MS})",
     )
     return analyze

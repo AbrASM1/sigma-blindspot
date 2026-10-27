@@ -25,7 +25,7 @@ sigma-blindspot inspect .\sysmonconfig.xml --html .\config.html
 sigma-blindspot check-event .\sysmonconfig.xml .\events.jsonl
 ```
 
-In a terminal, verdicts are in color and a long `analyze` shows its progress; `--color never` or the `NO_COLOR` variable turn colors off, and output redirected to a file is never colored. `--output FILE` writes the report in UTF-8, which `>` does not do in Windows PowerShell 5.1. `--jobs` uses several processors by default on large rule sets.
+In a terminal, verdicts are in color and a long `analyze` shows its progress; `--color never` or the `NO_COLOR` variable turn colors off, and output redirected to a file is never colored. `--output FILE` writes the report in UTF-8, which `>` does not do in Windows PowerShell 5.1. `analyze` uses 2 worker processes by default, so it stays light; `--jobs N` sets the number, and `--jobs auto` uses one per 50 rules, up to every processor.
 
 `analyze` on the configuration and rules in `tests/fixtures/`, from a clone:
 

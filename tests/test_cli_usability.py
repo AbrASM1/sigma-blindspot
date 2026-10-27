@@ -6,7 +6,13 @@ from conftest import Writer
 
 from sigma_blindspot import cli
 from sigma_blindspot.console import ColorMode, color_enabled, paint, paint_counts
-from sigma_blindspot.runner import RULES_PER_WORKER, auto_jobs, prove_all
+from sigma_blindspot.runner import (
+    DEFAULT_JOBS,
+    RULES_PER_WORKER,
+    auto_jobs,
+    default_jobs,
+    prove_all,
+)
 from sigma_blindspot.sigma.ir import LoadedRule
 from sigma_blindspot.sigma.loader import load_rules
 from sigma_blindspot.sysmon.parser import load_config
@@ -245,6 +251,12 @@ def test_no_progress_when_stderr_is_not_a_terminal(capsys: Capture) -> None:
 )
 def test_auto_jobs(rules: int, processors: int | None, expected: int) -> None:
     assert auto_jobs(rules, processors) == expected
+
+
+def test_the_default_uses_few_workers() -> None:
+    assert default_jobs(2420, 12) == DEFAULT_JOBS == 2
+    assert default_jobs(2 * RULES_PER_WORKER - 1, 12) == 1
+    assert default_jobs(2420, 1) == 1
 
 
 def test_jobs_accepts_auto_and_rejects_words(capsys: Capture) -> None:
