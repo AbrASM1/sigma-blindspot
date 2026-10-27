@@ -119,11 +119,6 @@ def summary_line(analysis: Analysis) -> str:
     return f"{counted(len(analysis.results), 'rule')}: {total}"
 
 
-def text_lines(analysis: Analysis) -> Iterator[str]:
-    yield from result_lines(analysis)
-    yield summary_line(analysis)
-
-
 def _example(example: Example | None) -> dict[str, object] | None:
     if example is None:
         return None
